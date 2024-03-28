@@ -442,7 +442,7 @@ class Game:
             self.players[curr_player].ally = player_id
             self.players[player_id].ally = curr_player
             print(f"Player {curr_player} allied Player {player_id}")
-        # boost <location> <1/-1
+        # boost <location> <1/-1>
         elif move[0] == "boost":
             location = int(move[1])
             value = int(move[2])
@@ -519,3 +519,6 @@ def main():
             while not g.parse_move(curr_player, move):
                 continue
             curr_player = (curr_player + 1) % args.n_players
+
+if __name__ == "__main__":
+    main()

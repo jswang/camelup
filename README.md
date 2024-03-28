@@ -7,10 +7,61 @@ So far this solver takes into account:
 - Boosting +1 or -1
 
 Notably, it's missing:
-- Consideration of when to bet on overall winner
-- Consideratino of when to bet on overall loser
+- When to bet on overall winner
+- When to bet on overall loser
 
 May the odds ever be in your favor...especially now that you know the odds.
+
+## Usage instructions
+Note that everything is index by 0, this differs from the tiles on the board which are index by 1.
+
+1. Start the game, then enter the game setup. Order matters
+```python
+python3 main.py --setup {RED: 0, YELLOW: 0, PURPLE: 1, BLUE: 2, GREEN: 2,  WHITE: 13, BLACK: 14}, --id=1, --n-players=2
+# Prints
+Camel Up!!!
+
+red: tile: 0, stack: 0
+yellow: tile: 0, stack: 1
+blue: tile: 2, stack: 0
+green: tile: 2, stack: 1
+purple: tile: 1, stack: 0
+white: tile: 13, stack: 0
+black: tile: 14, stack: 0
+
+positive boosters: []
+negative boosters: []
+
+Players: [Player 0: (points: 3, ally: None, bets: []), Player 1: (points: 3, ally: None, bets: [])]
+Available bets: red: 5, yellow: 5, blue: 5, green: 5, purple: 5, white: 5, black: 5,
+Winner bets: []
+Loser bets: []
+
+Enter Player 0 move:
+```
+
+2. Enter the other player's moves
+```
+bet <color>
+ally <player_id>
+boost <location> <1/-1>
+roll <color> <amount>
+winner
+loser
+print
+```
+3. When it's your turn to play, the optimal options will be calculate for you, then you enter what you did. It takes ~12s to calculate the optimal move. You'll get a printout like:
+```
+Calculating optimal move
+100%|███████████████████████████████████████| 320760/320760 [00:04<00:00, 70470.56it/s]
+100%|███████████████████████████████████████| 320760/320760 [00:04<00:00, 67013.47it/s]
+100%|███████████████████████████████████████| 320760/320760 [00:04<00:00, 67704.38it/s]
+1.94: Bet green
+1.00: Roll dice
+0.83: Ally Player 0
+0.22: Boost location 3, 1
+Enter your move:
+```
 
 ## Strategies
 In each round a player has the option to do one of the following:

@@ -69,14 +69,32 @@ def test_optimal_move():
     g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})
     g.optimal_move(g.players[0])
 
+def test_parse_move():
+    # Parse move
+    g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})
+    g.parse_move(0, ["bet", "yellow", "5"])
+    assert g.players[0].bets == [(YELLOW, 5)]
+    assert g.available_bets[YELLOW] == [2, 2, 3]
+    g.parse_move(0, ["ally", "1"])
+    assert g.players[0].ally == 1
+    g.parse_move(0, ["boost", "2", "1"])
+    assert g.players[0].boost == 2 # technically this is an illegal boost
+    assert np.all(g.board.boosters == np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+    g.parse_move(0, ["roll", "red", "2"])
+    assert g.players[0].points == 6
+    assert len(g.dice) == N_DICE - 1
+    g.parse_move(0, ["roll", "yellow", "2"])
+    g.parse_move(0, ["roll", "blue", "2"])
+    g.parse_move(0, ["roll", "green", "2"])
+    g.parse_move(0, ["roll", "purple", "2"])
+    # +2 from boost, +5 from roll, +1 from bet
+    assert g.players[0].points == 11
 
+
+test_parse_move()
 test_booster_locations()
 test_winning_with_booster()
 test_hopping_under()
 test_overall_probability()
 test_optimal_move()
 print("Passed all tests")
-# array([0.        , 0.33333333, 0.48148148, 0.48148148, 0.22222222,
-    #    0.07407407, 0.07407407, 0.        , 0.        , 0.        ,
-    #    0.        , 0.        , 0.        , 0.        , 0.        ,
-    #    0.        ])

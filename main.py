@@ -3,6 +3,8 @@ import itertools
 import copy
 import tqdm
 import numpy as np
+import argparse
+import random
 
 EMPTY = -1
 RED = 0
@@ -26,12 +28,15 @@ class Player:
         self.points = 3
         self.winner_bet = None
         self.loser_bet = None
+        # id of ally, None if none
         self.ally = None
         # List of (color, amount)
         self.bets = []
+        # location of boost
+        self.boost = None
 
     def __repr__(self) -> str:
-        return f"Player {self.id}, points: {self.points}, ally: {self.ally}, bets: {self.bets}"
+        return f"Player {self.id}: (points: {self.points}, ally: {self.ally}, bets: {self.bets})"
 
 def get_num_camels(tile):
     """Return number of camels on a tile"""
@@ -45,24 +50,25 @@ def get_camels(tile):
     x = get_num_camels(tile)
     return np.copy(tile[0:x])
 
-def get_color(value):
-    if value == RED:
-        return "R"
-    elif value == YELLOW:
-        return "Y"
-    elif value == BLUE:
-        return "B"
-    elif value == GREEN:
-        return "G"
-    elif value == PURPLE:
-        return "P"
-    elif value == WHITE:
-        return "W"
-    elif value == BLACK:
-        return "X"
+def str_to_color(value: str):
+    value = value.lower().strip()
+    if value == "red":
+        return RED
+    elif value == "yellow":
+        return YELLOW
+    elif value == "blue":
+        return BLUE
+    elif value == "green":
+        return GREEN
+    elif value == "purple":
+        return PURPLE
+    elif value == "white":
+        return WHITE
+    elif value == "black":
+        return BLACK
+    return None
 
-
-def get_color_name(value):
+def color_to_str(value):
     if value == RED:
         return "red"
     elif value == YELLOW:
@@ -92,6 +98,18 @@ class Board:
         self.boosters = np.zeros(N_TILES, dtype=int)
         # Init board with a setup
         self.parse_setup(setup)
+
+
+    def __repr__(self) -> str:
+        res = ""
+        for c in CAMELS:
+            tile,stack = get_location(self.tiles, c)
+            res += f"{color_to_str(c)}: tile: {tile}, stack: {stack}\n"
+        res += "\n"
+        # indices of positive boosters
+        res += f"positive boosters: {np.where(self.boosters > 0)[0]}\n"
+        res += f"negative boosters: {np.where(self.boosters < 0)[0]}\n"
+        return res
 
     def parse_setup(self, setup):
         """Parse setup dictionary and set up board accordingly"""
@@ -231,6 +249,8 @@ class Game:
         self.players = [Player(i) for i in range(n_players)]
         # Board
         self.board = Board(setup)
+        # Dice remaining
+        self.dice = DICE.copy()
         # bets on who will win overall
         self.winner_bets = []
         # bets on who will lose overall
@@ -300,9 +320,6 @@ class Game:
             for (color, amount) in me.bets:
                 change_ev[color] = first_delta[color] * amount + second_delta[color] + last_delta[color] * (-1)
             ev.append(np.sum(change_ev))
-        print(f"{landing_val:.2f}: Boost ev on {loc}")
-        print(f"{ev[0]:.2f}: Boost +1 on {loc}")
-        print(f"{ev[1]:.2f}: Boost -1 on {loc}")
         return landing_val + max(ev), loc, possible_plays[np.argmax(ev)]
 
 
@@ -318,6 +335,7 @@ class Game:
         5. Bet on overall winner
         6. Bet on overall loser
         """
+        print(f"Calculating optimal move")
         first_place, second_place, landings = self.win_probabilities(self.board)
 
         # 1. Choose available bet
@@ -328,7 +346,7 @@ class Game:
         for (i, player) in enumerate(self.players):
             if player.id == me.id:
                 player_ev[i] = -np.inf
-            if player.ally:
+            if player.ally is not None:
                 player_ev[i] = -np.inf
         ally_val, ally_index = np.max(player_ev), np.argmax(player_ev)
         if ally_val == -np.inf:
@@ -338,8 +356,8 @@ class Game:
         # 3. Place tile
         booster_val, booster_location, boost_type = self.best_booster_bet(me, first_place, second_place, landings)
         vals = [bet_val, ally_val, booster_val, 1]
-        options = [f"Bet {get_color_name(bet_color)}", f"Ally {self.players[ally_index].id}", f"Boost {booster_location}, {boost_type}", "Roll dice"]
-        indices = np.argsort(vals)
+        options = [f"Bet {color_to_str(bet_color)}", f"Ally Player {self.players[ally_index].id}", f"Boost location {booster_location}, {boost_type}", "Roll dice"]
+        indices = np.flip(np.argsort(vals))
         for i in indices:
             print(f"{vals[i]:.2f}: {options[i]}")
 
@@ -363,34 +381,141 @@ class Game:
         sp = second_place / total
         return fp, sp, total_landings / total
 
+    def reset_round(self):
+        """Reset a round"""
+        self.dice = DICE.copy()
+        self.available_bets = {}
+        for color in CAMELS:
+            self.available_bets[color] = [2, 2, 3, 5]
+
+    def conclude_round(self, winners):
+        """Distribute winnings and reset"""
+        for player in self.players:
+            max_win = 0
+            # Deal out winnings
+            if len(player.bets) > 0:
+                for (color, amount) in player.bets:
+                    if color == winners[0]:
+                        win = amount
+                    elif color == winners[1]:
+                        win = 1
+                    else:
+                        win = -1
+                    if win > max_win:
+                        max_win = win
+                    player.points += win
+                # Dont forget ally winnings
+                self.players[player.ally].points += max_win
+        self.reset_round()
 
     def __repr__(self) -> str:
-        """Handy dandy game representation, e.g.:
-        Y G
-        RPB          WX
-        ----------------
-        0123456789111111
-                  012345
         """
-        tiles = self.board.tiles
-        # max height of a stack
-        res = ""
-        for j in range(N_CAMELS-1, -1, -1):
-            res += "\n"
-            for i in range(N_TILES):
-                if tiles[i][j] != EMPTY:
-                    res += get_color(tiles[i][j])
-                else:
-                    res += " "
+        Print the game status
+        """
+        res = f"{self.board}\n"
+        res += f"Players: {self.players}\n"
+        res += f"Available bets: "
+        for k,v in self.available_bets.items():
+            if len(v) == 0:
+                res += f"{color_to_str(k)}: None, "
+            else:
+                res += f"{color_to_str(k)}: {v[-1]}, "
         res += "\n"
-        res += "-" * N_TILES + "\n" + "0123456789111111" + "\n" + "          012345"
+        res += f"Winner bets: {self.winner_bets}\n"
+        res += f"Loser bets: {self.loser_bets}\n"
         return res
 
+    def parse_move(self, curr_player, move: str) -> bool:
+        # bet <color>
+        if move[0] == "bet":
+            color = str_to_color(move[1])
+            if len(self.available_bets[color]) == 0:
+                print(f"Invalid move: {move}. Please try again.")
+                return False
+            amount = self.available_bets[color][-1]
+            self.players[curr_player].bets.append((color, amount))
+            self.available_bets[color].pop()
+            print(f"Player {curr_player} bet on {move[1]} for {amount}")
+        # ally <player_id>
+        elif move[0] == "ally":
+            player_id = int(move[1])
+            self.players[curr_player].ally = player_id
+            self.players[player_id].ally = curr_player
+            print(f"Player {curr_player} allied Player {player_id}")
+        # boost <location> <1/-1
+        elif move[0] == "boost":
+            location = int(move[1])
+            value = int(move[2])
+            # Remove old booster
+            if self.players[curr_player].boost is not None:
+                self.board.boosters[self.players[curr_player].boost[0]] = 0
+            # Place new booster
+            self.players[curr_player].boost = location
+            self.board.boosters[location] = value
+            print(f"Player {curr_player} placed booster at {location} with value {value}")
+        # roll <color> <amount>
+        elif move[0] == "roll":
+            # Fixed roll
+            if len(move) == 3:
+                color = str_to_color(move[1])
+                amount = int(move[2])
+            # Random roll
+            else:
+                color = random.choice(self.dice)
+                amount = random.randint(1, 3)
+            # Update board
+            self.players[curr_player].points += 1
+            winners, tiles, landings = self.board.simulate_round([(color, amount)], {})
+            self.board.tiles = tiles
+            self.dice.remove(color)
+            # Handout boost points
+            for player in self.players:
+                if player.boost is not None:
+                    player.points += landings[player.boost]
+            # Conclude if necessary
+            if len(self.dice) == 1:
+                print(f"Concluding round")
+                self.conclude_round(winners)
+            print(f"Player {curr_player} rolled {color_to_str(color)} {amount}")
+        # winner
+        elif move[0] == "winner":
+            self.winner_bets.append(curr_player)
+            print(f"Player {curr_player} bet on overall winner")
+        # loser
+        elif move[0] == "loser":
+            self.loser_bets.append(curr_player)
+            print(f"Player {curr_player} bet on overall loser")
+        # print
+        elif move[0] == "print":
+            print(self)
+        else:
+            print(f"Invalid move: {move}. Please try again.")
+            return False
+        return True
+
 def main():
-    print("Camel Up")
+    parser = argparse.ArgumentParser(description='Camel Up Game')
 
-    # Optimal move
-    g = Game(4, setup={YELLOW: 0, RED: 0, PURPLE: 0, WHITE: 2, BLUE: 2, GREEN: 2, BLACK:5})
-    g.optimal_move(g.players[0])
+    parser.add_argument('--setup', type=str, help='Setup dictionary for the game', default={RED: 0, YELLOW: 0, PURPLE: 1, BLUE: 2, GREEN: 2,  WHITE: 13, BLACK: 14})
+    parser.add_argument('--id', type=int, help='Player id', default=1)
+    parser.add_argument('--n-players', type=int, help='Number of players', default=2)
+    args = parser.parse_args()
 
-main()
+    print("Camel Up!!!\n")
+    # Set up game
+    g = Game(args.n_players, setup=args.setup)
+    print(g)
+    curr_player = 0
+    while True:
+        # Enter what other people do
+        if curr_player != args.id:
+            move = input(f"Enter Player {curr_player} move: ").lower().strip().split(' ')
+            if g.parse_move(curr_player, move):
+                curr_player = (curr_player + 1) % args.n_players
+        # Calculate optimal move:
+        else:
+            g.optimal_move(g.players[args.id])
+            move = input(f"Enter your move: ").lower().strip().split(' ')
+            while not g.parse_move(curr_player, move):
+                continue
+            curr_player = (curr_player + 1) % args.n_players

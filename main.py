@@ -73,7 +73,8 @@ class Board:
     def get_winners(self, tiles):
         """Returns ordering of camels on board from winner to loser, ignore WHITE and BLACK"""
         res = tiles.flatten()
-        return res[np.logical_and(np.logical_and(res != WHITE, res != BLACK), res != 0)]
+        res = res[np.logical_and(np.logical_and(res != WHITE, res != BLACK), res != 0)]
+        return np.flip(res)
 
     def reset_round(self):
         """Reset available bets"""
@@ -138,7 +139,8 @@ class Board:
                     tile_cache[index] = np.copy(tiles)
                     camel_cache[index] = np.copy(camels)
 
-        return tiles, camels
+        winners = self.get_winners(tiles)
+        return winners, tiles
 
 
 class Game:
@@ -215,8 +217,7 @@ class Game:
         tile_cache = {}
         camel_cache = {}
         for round in tqdm.tqdm(self.rounds):
-            tiles, _ = self.board.simulate_round(round, tile_cache, camel_cache)
-            winners = self.board.get_winners(tiles)
+            winners, _ = self.board.simulate_round(round, tile_cache, camel_cache)
             first_place[winners[0]] += 1
             second_place[winners[1]] += 1
         # Calculate probability of each camel winning

@@ -1,6 +1,6 @@
 import random
 import copy
-import timeit
+import time
 import itertools
 import tqdm
 from collections import Counter
@@ -91,8 +91,10 @@ class Board:
         """
         Simulate moving the camels according to rounds, which is a list of 5 (color, spaces)
         """
+        tic0 = time.perf_counter()
         tiles = np.copy(self.tiles)
         camels = np.copy(self.camels)
+        tic1 = time.perf_counter()
         game_over = False
         for (color, spaces) in round:
             # If crazy camel rolled, and only one has toppers, move the one with toppers
@@ -132,7 +134,8 @@ class Board:
             # End round right away if someone won
             if game_over:
                 return tiles, camels
-        return tiles, camels
+        tic2 = time.perf_counter()
+        return tiles, camels, (tic0, tic1, tic2)
 
 
 class Game:
@@ -206,13 +209,16 @@ class Game:
         """
         first_place = {RED: 0, YELLOW: 0, BLUE: 0, GREEN: 0, PURPLE: 0}
         second_place = {RED: 0, YELLOW: 0, BLUE: 0, GREEN: 0, PURPLE: 0}
-
+        t0, t1, t2 = 0, 0, 0
         for round in tqdm.tqdm(self.rounds):
-            tiles, _ = self.board.simulate_round(round)
+            tiles, _, (n0, n1, n2) = self.board.simulate_round(round)
+            t0 += n0
+            t1 += n1
+            t2 += n2
             winners = self.board.get_winners(tiles)
             first_place[winners[0]] += 1
             second_place[winners[1]] += 1
-
+        print(f"t1 - t0: {(t1-t0)/len(self.rounds)}, t2 - t1: {(t2-t1)/len(self.rounds)}")
         # Calculate probability of each camel winning
         total = sum(first_place.values())
         first_place = {k: v/total for k, v in first_place.items()}

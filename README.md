@@ -1,7 +1,6 @@
 # Camel Up Solver
 <img src="docs/camel_up.png" width="500"><br>
-Want to vanquish your enemies in Camel Up board game? Well look no further, this solver tells you the best move to make for any board config! <br>
-So far this solver takes into account:
+Want to vanquish your enemies in Camel Up? Well look no further, this solver tells you the best move to make! The solver takes into account:
 - Available bets based on players
 - Ability to ally
 - Boosting +1 or -1
@@ -15,7 +14,7 @@ May the odds ever be in your favor...especially now that you know the odds.
 ## Usage instructions
 Note that everything is index by 0, this differs from the tiles on the board which are index by 1.
 
-1. Start the game, then enter the game setup. Order matters
+1. Enter the game initial setup. Order matters for stacking, here red will end up below yellow.
 ```python
 python3 main.py --setup {RED: 0, YELLOW: 0, PURPLE: 1, BLUE: 2, GREEN: 2,  WHITE: 13, BLACK: 14}, --id=1, --n-players=2
 # Prints
@@ -40,7 +39,7 @@ Loser bets: []
 Enter Player 0 move:
 ```
 
-2. Enter the other player's moves
+2. Enter the other player's moves using one of the following:
 ```
 bet <color>
 ally <player_id>
@@ -48,6 +47,9 @@ boost <location> <1/-1>
 roll <color> <amount>
 winner
 loser
+```
+You can always get the solver's picture of the world using:
+```
 print
 ```
 3. When it's your turn to play, the optimal options will be calculate for you, then you enter what you did. It takes ~12s to calculate the optimal move. You'll get a printout like:

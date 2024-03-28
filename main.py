@@ -70,18 +70,10 @@ class Board:
         self.loser_bets = []
         self.reset_round()
 
-    def get_winners(self, tiles) -> list:
+    def get_winners(self, tiles):
         """Returns ordering of camels on board from winner to loser, ignore WHITE and BLACK"""
-        res = []
-        for i in range(len(tiles)-1, -1, -1):
-            row = np.flip(tiles[i])
-            for c in row:
-                if c not in [WHITE, BLACK, 0]:
-                    res.append(c)
-            # extend row with tiles[i] that are not WHITE or BLACK or 0
-            # weird, logical or doesn't work??
-            # res.extend(row[np.logical_not(np.logical_or(row == WHITE, row == BLACK, row == 0))])
-        return res
+        res = tiles.flatten()
+        return res[np.logical_and(np.logical_and(res != WHITE, res != BLACK), res != 0)]
 
     def reset_round(self):
         """Reset available bets"""
@@ -91,10 +83,8 @@ class Board:
         """
         Simulate moving the camels according to rounds, which is a list of 5 (color, spaces)
         """
-        tic0 = time.perf_counter()
         tiles = np.copy(self.tiles)
         camels = np.copy(self.camels)
-        tic1 = time.perf_counter()
         game_over = False
         for i in range(len(round)):
             index = tuple(round[0:i+1])
@@ -148,8 +138,7 @@ class Board:
                     tile_cache[index] = np.copy(tiles)
                     camel_cache[index] = np.copy(camels)
 
-        tic2 = time.perf_counter()
-        return tiles, camels, (tic0, tic1, tic2)
+        return tiles, camels
 
 
 class Game:
@@ -223,18 +212,13 @@ class Game:
         """
         first_place = {RED: 0, YELLOW: 0, BLUE: 0, GREEN: 0, PURPLE: 0}
         second_place = {RED: 0, YELLOW: 0, BLUE: 0, GREEN: 0, PURPLE: 0}
-        t0, t1, t2 = 0, 0, 0
         tile_cache = {}
         camel_cache = {}
         for round in tqdm.tqdm(self.rounds):
-            tiles, _, (n0, n1, n2) = self.board.simulate_round(round, tile_cache, camel_cache)
-            t0 += n0
-            t1 += n1
-            t2 += n2
+            tiles, __loader__ = self.board.simulate_round(round, tile_cache, camel_cache)
             winners = self.board.get_winners(tiles)
             first_place[winners[0]] += 1
             second_place[winners[1]] += 1
-        print(f"t1 - t0: {(t1-t0)/len(self.rounds)}, t2 - t1: {(t2-t1)/len(self.rounds)}")
         # Calculate probability of each camel winning
         total = sum(first_place.values())
         first_place = {k: v/total for k, v in first_place.items()}

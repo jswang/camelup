@@ -210,20 +210,20 @@ class Game:
         """
         Calculate the probability of each camel winning
         """
-        first_place = {RED: 0, YELLOW: 0, BLUE: 0, GREEN: 0, PURPLE: 0}
-        second_place = {RED: 0, YELLOW: 0, BLUE: 0, GREEN: 0, PURPLE: 0}
+        first_place = np.zeros(N_CAMELS, dtype=int)
+        second_place =  np.zeros(N_CAMELS, dtype=int)
         tile_cache = {}
         camel_cache = {}
         for round in tqdm.tqdm(self.rounds):
-            tiles, __loader__ = self.board.simulate_round(round, tile_cache, camel_cache)
+            tiles, _ = self.board.simulate_round(round, tile_cache, camel_cache)
             winners = self.board.get_winners(tiles)
             first_place[winners[0]] += 1
             second_place[winners[1]] += 1
         # Calculate probability of each camel winning
-        total = sum(first_place.values())
-        first_place = {k: v/total for k, v in first_place.items()}
-        second_place = {k: v/total for k, v in second_place.items()}
-        return first_place, second_place
+        total = np.sum(first_place)
+        fp = first_place / total
+        sp = second_place / total
+        return fp, sp
 
 
 def main():

@@ -1,19 +1,22 @@
 import random
 import copy
+import timeit
 import itertools
 import tqdm
 from collections import Counter
+import numpy as np
 
-RED = 'R'
-YELLOW = 'Y'
-BLUE = 'B'
-GREEN = 'G'
-PURPLE = 'P'
-WHITE = 'W'
-BLACK = 'X'
-GREY = 'E'
+RED = 1
+YELLOW = 2
+BLUE = 3
+GREEN = 4
+PURPLE = 5
+WHITE = 6
+BLACK = 7
+GREY = 8
 
 N_TILES = 16
+N_CAMELS = 7
 class Player:
     def __init__(self) -> None:
         self.points = 3
@@ -26,16 +29,40 @@ class Player:
         self.booster = None
         self.round_bets = []
 
+def get_num_camels(tile):
+    """Return number of camels on a tile"""
+    z = np.nonzero(tile)
+    if len(z) == 0:
+        return 0
+    return len(z[0])
+
+def get_color(value):
+    if value == RED:
+        return "R"
+    elif value == YELLOW:
+        return "Y"
+    elif value == BLUE:
+        return "B"
+    elif value == GREEN:
+        return "G"
+    elif value == PURPLE:
+        return "P"
+    elif value == WHITE:
+        return "W"
+    elif value == BLACK:
+        return "X"
+
 class Board:
     def __init__(self, setup : dict=None):
         # List of camels on each tile
-        self.tiles = [[] for _ in range(N_TILES)]
+        self.tiles = np.zeros((N_TILES, N_CAMELS), dtype=int)
         # Tile number of each camel
-        self.camels = Counter()
+        self.camels = np.zeros(N_CAMELS+1, dtype=int)
+
         # Init board with a setup
         if setup:
             for color, tile in setup.items():
-                self.tiles[tile].append(color)
+                self.tiles[tile][get_num_camels(self.tiles[tile])] = color
                 self.camels[color] = tile
         # bets on who will win overall
         self.winner_bets = []
@@ -47,7 +74,13 @@ class Board:
         """Returns ordering of camels on board from winner to loser, ignore WHITE and BLACK"""
         res = []
         for i in range(len(tiles)-1, -1, -1):
-            res.extend([c for c in reversed(tiles[i]) if c not in [WHITE, BLACK]])
+            row = np.flip(tiles[i])
+            for c in row:
+                if c not in [WHITE, BLACK, 0]:
+                    res.append(c)
+            # extend row with tiles[i] that are not WHITE or BLACK or 0
+            # weird, logical or doesn't work??
+            # res.extend(row[np.logical_not(np.logical_or(row == WHITE, row == BLACK, row == 0))])
         return res
 
     def reset_round(self):
@@ -58,16 +91,17 @@ class Board:
         """
         Simulate moving the camels according to rounds, which is a list of 5 (color, spaces)
         """
-        tiles = copy.deepcopy(self.tiles)
-        camels = copy.deepcopy(self.camels)
+        tiles = np.copy(self.tiles)
+        camels = np.copy(self.camels)
         game_over = False
         for (color, spaces) in round:
-            assert len(tiles) == N_TILES
             # If crazy camel rolled, and only one has toppers, move the one with toppers
             if color in [BLACK, WHITE]:
                 # who has toppers?
-                black_top = len(tiles[camels[BLACK]]) - 1 > tiles[camels[BLACK]].index(BLACK)
-                white_top = len(tiles[camels[WHITE]]) - 1 > tiles[camels[WHITE]].index(WHITE)
+                black_loc = np.where(tiles[camels[BLACK]] == BLACK)[0][0]
+                black_top = black_loc < N_CAMELS-1 and tiles[camels[BLACK]][black_loc+1] != 0
+                white_loc = np.where(tiles[camels[WHITE]] == WHITE)[0][0]
+                white_top = white_loc < N_CAMELS-1 and tiles[camels[WHITE]][white_loc+1] != 0
                 if black_top and not white_top:
                     color = BLACK
                 if white_top and not black_top:
@@ -75,27 +109,31 @@ class Board:
                 spaces = -spaces
             # Move the camel
             my_tile = camels[color]
-            my_stack_index = tiles[my_tile].index(color)
-            my_stack = tiles[my_tile][my_stack_index:]
-            # remove my_stack from the original tile
-            tiles[my_tile] = tiles[my_tile][0:my_stack_index]
+            my_stack_index = np.where(tiles[my_tile] == color)[0][0]
+
             # Put my_stack onto new tile
             # TODO: account for -1/+1
             # TODO: wraparound and game winning
             if my_tile + spaces >= N_TILES:
                 game_over = True
-                tiles.extend([[]*(my_tile + spaces - N_TILES + 1)])
+                np.vstack(tiles, np.zeros((my_tile + spaces - N_TILES + 1, N_CAMELS), dtype=int))
 
-            tiles[my_tile + spaces].extend(my_stack)
-            for c in my_stack:
-                camels[c] += spaces
+            # Move em camels
+            camels[tiles[my_tile][my_stack_index:]] += spaces
+            new_tile = my_tile+spaces
+            new_stack_index = get_num_camels(tiles[my_tile + spaces])
+            l = min(len(tiles[new_tile][new_stack_index:]), len(tiles[my_tile][my_stack_index:]))
+            # copy over just the relevant stuff
+            tiles[new_tile][new_stack_index:new_stack_index+l] = tiles[my_tile][my_stack_index:my_stack_index+l]
+
+            # Clean up old spot
+            tiles[my_tile][my_stack_index:] = np.zeros(N_CAMELS - my_stack_index, dtype=int)
+
             # End round right away if someone won
             if game_over:
                 return tiles, camels
         return tiles, camels
 
-    def __repr__(self):
-        return f"{self.tiles}"
 
 class Game:
     def __init__(self, n_players : int, setup=None) -> None:
@@ -131,13 +169,12 @@ class Game:
         """
         tiles = self.board.tiles
         # max height of a stack
-        max_stack = max([len(t) for t in tiles])
         res = ""
-        for i in range(max_stack-1, -1, -1):
+        for j in range(N_CAMELS-1, -1, -1):
             res += "\n"
-            for j in range(N_TILES):
-                if len(tiles[j]) > i:
-                    res += f"{tiles[j][i]}"
+            for i in range(N_TILES):
+                if tiles[i][j] != 0:
+                    res += get_color(tiles[i][j])
                 else:
                     res += " "
         res += "\n"
@@ -188,7 +225,7 @@ def main():
 
     g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})
     print(g)
-    print(g.board.get_winners(g.board.tiles))
-    g.win_probabilities()
+    print([get_color(c) for c in g.board.get_winners(g.board.tiles)])
+    print(g.win_probabilities())
 
 main()

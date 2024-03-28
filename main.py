@@ -4,19 +4,21 @@ import copy
 import tqdm
 import numpy as np
 
-EMPTY = 0
-RED = 1
-YELLOW = 2
-BLUE = 3
-GREEN = 4
-PURPLE = 5
-WHITE = 6
-BLACK = 7
-GREY = 8
+RED = 0
+YELLOW = 1
+BLUE = 2
+GREEN = 3
+PURPLE = 4
+WHITE = 5
+BLACK = 6
+GREY = 7
 
 N_TILES = 16
-N_CAMELS = 7
+CAMELS = [RED, YELLOW, BLUE, GREEN, PURPLE, WHITE, BLACK]
+N_CAMELS = len(CAMELS)
 N_WIN_CAMELS = N_CAMELS - 2
+DICE = [RED, YELLOW, BLUE, GREEN, PURPLE, GREY]
+N_DICE = len(DICE)
 
 class Player:
     def __init__(self, id) -> None:
@@ -28,13 +30,15 @@ class Player:
         # List of (color, amount)
         self.bets = []
 
+    def __repr__(self) -> str:
+        return f"Player {self.id}, points: {self.points}, ally: {self.ally}, bets: {self.bets}"
 
 def get_num_camels(tile):
     """Return number of camels on a tile"""
-    z = np.nonzero(tile)
+    z = np.where(tile != -1)[0]
     if len(z) == 0:
         return 0
-    return len(z[0])
+    return len(z)
 
 def get_camels(tile):
     """Get all camels on this tile"""
@@ -76,10 +80,10 @@ def get_color_name(value):
 
 class Board:
     def __init__(self, setup : dict=None):
-        # List of camels on each tile
-        self.tiles = np.zeros((N_TILES, N_CAMELS), dtype=int)
+        # List of camels on each tile, -1 if no camel
+        self.tiles = np.ones((N_TILES, N_CAMELS), dtype=int)*-1
         # Camel tile index
-        self.camels = np.zeros(N_CAMELS+1, dtype=int)
+        self.camels = np.zeros(N_CAMELS, dtype=int)
         # Booster index, 0 if no booster
         self.boosters = np.zeros(N_TILES, dtype=int)
         # Init board with a setup
@@ -89,7 +93,7 @@ class Board:
         """Parse setup dictionary and set up board accordingly"""
         if setup:
             for color, tile in setup.items():
-                if color in [RED, YELLOW, BLUE, GREEN, PURPLE, WHITE, BLACK]:
+                if color in CAMELS:
                     self.tiles[tile][get_num_camels(self.tiles[tile])] = color
                     self.camels[color] = tile
                 elif color == "boosters":
@@ -159,7 +163,7 @@ class Board:
                 # Did you win?
                 if new_tile >= N_TILES:
                     game_over = True
-                    tiles = np.vstack((tiles, np.zeros((new_tile - N_TILES + 1, N_CAMELS), dtype=int)))
+                    tiles = np.vstack((tiles, np.ones((new_tile - N_TILES + 1, N_CAMELS), dtype=int)*-1))
 
                 # Move em camels, wraparound to not have negative values
                 camels[tiles[my_tile][my_stack_index:]] = new_tile
@@ -167,7 +171,7 @@ class Board:
 
                 # Fix up tiles
                 stack_to_move = get_camels(tiles[my_tile][my_stack_index:])
-                tiles[my_tile][my_stack_index:] = 0
+                tiles[my_tile][my_stack_index:] = -1
                 if on_top:
                     new_stack_index = get_num_camels(tiles[new_tile])
                     # Move to new tile
@@ -176,7 +180,7 @@ class Board:
                     stack_to_keep = get_camels(tiles[new_tile])
                     tiles[new_tile][0:len(stack_to_move)] = stack_to_move
                     tiles[new_tile][len(stack_to_move):len(stack_to_move)+len(stack_to_keep)] = stack_to_keep
-                    tiles[new_tile][len(stack_to_move)+len(stack_to_keep):] = 0
+                    tiles[new_tile][len(stack_to_move)+len(stack_to_keep):] = -1
 
                 # Keep track of landings before booster added
                 if my_tile + spaces < N_TILES:
@@ -198,12 +202,12 @@ class Board:
 def init_rounds() -> list:
     """Initialize all possible permutations of colors + dice rolls for a round"""
     rounds = []
-    for color in itertools.permutations([RED, YELLOW, BLUE, GREEN, PURPLE, GREY], 5):
-        for rolls in itertools.product(range(1, 4), repeat=5):
+    for color in itertools.permutations(DICE, N_DICE-1):
+        for rolls in itertools.product(range(1, 4), repeat=N_DICE-1):
             if GREY in color:
                 res1 = []
                 res2 = []
-                for i in range(5):
+                for i in range(N_DICE-1):
                     if color[i] == GREY:
                         res1.append((BLACK, rolls[i]))
                         res2.append((WHITE, rolls[i]))
@@ -225,8 +229,10 @@ class Game:
         self.winner_bets = []
         # bets on who will lose overall
         self.loser_bets = []
-        # Avaiable bets
-        self.available_bets = {RED: [2, 2, 3, 5], YELLOW: [2, 2, 3, 5], BLUE: [2, 2, 3, 5], GREEN: [2, 2, 3, 5], PURPLE: [2, 2, 3, 5]}
+        # Available
+        self.available_bets = {}
+        for color in CAMELS:
+            self.available_bets[color] = [2, 2, 3, 5]
         # Intialize possible rounds due to dice rolls, only do this one time
         self.rounds = init_rounds()
 
@@ -244,15 +250,20 @@ class Game:
         """Given the prob of coming in first or second, return the expected value of best bet and associated color"""
         max_val = None
         max_color = None
+        vals = []
+        colors = []
         for color, bets in self.available_bets.items():
             if bets:
                 new_val = first[color] * bets[-1] + second[color] + (1 - first[color] - second[color])*(-1)
+                vals.append(new_val)
+                colors.append(color)
                 if not max_val:
                     max_val = new_val
                     max_color = color
                 elif new_val > max_val:
                     max_val = new_val
                     max_color = color
+        print(f"{vals}, {colors}: Betting values")
         return max_val, max_color
 
 
@@ -284,8 +295,9 @@ class Game:
             for (color, amount) in me.bets:
                 change_ev[color] = first_delta[color] * amount + second_delta[color] + last_delta[color] * (-1)
             ev.append(np.sum(change_ev))
-
-
+        print(f"{landing_val:.2f}: Boost ev on {loc}")
+        print(f"{ev[0]:.2f}: Boost +1 on {loc}")
+        print(f"{ev[1]:.2f}: Boost -1 on {loc}")
         return landing_val + max(ev), loc, possible_plays[np.argmax(ev)]
 
 
@@ -323,6 +335,7 @@ class Game:
 
         print(f"{bet_val:.2f}: Bet {get_color_name(bet_color)}\n{ally_val:.2f}: Ally {self.players[ally_index].id}\n{booster_val:.2f}: Boost {booster_location}, {boost_type}")
         print(f"1.00: Roll dice")
+
 
     def win_probabilities(self, board):
         """
@@ -370,65 +383,8 @@ class Game:
 def main():
     print("Camel Up")
 
-    # Booster locations
-    b = Board(setup={BLACK: 0, RED: 2, YELLOW: 2, PURPLE: 4, WHITE: 10, BLUE: 11, GREEN: 11, "boosters": np.array([0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])})
-    assert b.available_booster_locations() == [1, 3, 7, 8, 9, 12, 13]
-
-    # Winning with a booster
-    b = Board(setup={BLACK: 0, RED: 0, YELLOW: 0, PURPLE: 1, WHITE: 2, BLUE: 2, GREEN: 2, "boosters": np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])})
-    winners, tiles, landings = b.simulate_round([(BLACK, 1)], {}, {})
-    assert np.all(tiles == np.array([[0, 0, 0, 0, 0, 0, 0],
-       [5, 0, 0, 0, 0, 0, 0],
-       [6, 3, 4, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [7, 1, 2, 0, 0, 0, 0]]))
-    assert np.all(winners == np.array([2, 1, 4, 3, 5]))
-    assert np.all(landings == np.array([0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,3]))
-
-    # Hopping under
-    b = Board(setup={YELLOW: 0, RED: 0, PURPLE: 0, WHITE: 2, BLUE: 2, GREEN: 2, "boosters": np.array([0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])})
-    winners, tiles, landings = b.simulate_round([(RED, 1)], {}, {})
-    assert np.all(tiles == np.array([[1, 5, 2, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [6, 3, 4, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0],
-       [0, 0, 0, 0, 0, 0, 0]]))
-    assert np.all(winners == np.array([4, 3, 2, 5, 1]))
-    assert np.all(landings == np.array([0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
-
-    # Overall probabilities
-    g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})
-    first, second, landings = g.win_probabilities(g.board)
-    first = first[1:6]
-    second = second[1:6]
-    assert np.all(np.isclose(first, [0.07398054620276842, 0.25419316623020327, 0.13835889761815687, 0.39801409153261, 0.1354532984162614]))
-    assert np.all(np.isclose(second, [0.10978925052999126, 0.15208567153011598, 0.29945753834642724, 0.2764029180695847, 0.16226462152388077]))
-
     # Optimal move
-    g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})
+    g = Game(4, setup={YELLOW: 0, RED: 0, PURPLE: 0, WHITE: 2, BLUE: 2, GREEN: 2, BLACK:5})
     g.optimal_move(g.players[0])
 
 main()

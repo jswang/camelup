@@ -114,13 +114,13 @@ class Board:
 
                 # Put my_stack onto new tile
                 # TODO: account for -1/+1
-                # TODO: wraparound and game winning
                 if my_tile + spaces >= N_TILES:
                     game_over = True
-                    np.vstack(tiles, np.zeros((my_tile + spaces - N_TILES + 1, N_CAMELS), dtype=int))
+                    tiles = np.vstack((tiles, np.zeros((my_tile + spaces - N_TILES + 1, N_CAMELS), dtype=int)))
 
-                # Move em camels
+                # Move em camels, wraparound to not have negative values
                 camels[tiles[my_tile][my_stack_index:]] += spaces
+                camels %= len(tiles)
                 new_tile = my_tile+spaces
                 new_stack_index = get_num_camels(tiles[my_tile + spaces])
                 l = min(len(tiles[new_tile][new_stack_index:]), len(tiles[my_tile][my_stack_index:]))
@@ -132,7 +132,8 @@ class Board:
 
                 # End round right away if someone won
                 if game_over:
-                    return tiles, camels
+                    winners = self.get_winners(tiles)
+                    return winners, tiles
 
                 # Update cache if this could be useful in the future
                 if i != len(round) - 1:
@@ -151,7 +152,7 @@ class Game:
         self.dice_left = 5
         # Intialize possible rounds due to dice rolls
         self.rounds = []
-        for color in itertools.permutations([RED, YELLOW, BLUE, GREEN, PURPLE, GREY], 5):
+        for color in itertools.permutations([GREY, RED, YELLOW, BLUE, GREEN, PURPLE], 5):
             for rolls in itertools.product(range(1, 4), repeat=5):
                 if GREY in color:
                     res1 = []
@@ -217,7 +218,7 @@ class Game:
         tile_cache = {}
         camel_cache = {}
         for round in tqdm.tqdm(self.rounds):
-            winners, _ = self.board.simulate_round(round, tile_cache, camel_cache)
+            winners, tiles = self.board.simulate_round(round, tile_cache, camel_cache)
             first_place[winners[0]] += 1
             second_place[winners[1]] += 1
         # Calculate probability of each camel winning
@@ -230,7 +231,12 @@ class Game:
 def main():
     print("Camel Up")
 
-    g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})
+    # g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})
+    # print(g)
+    # print([get_color(c) for c in g.board.get_winners(g.board.tiles)])
+    # print(g.win_probabilities())
+
+    g = Game(4, setup={BLACK: 0, RED: 0, YELLOW: 0, PURPLE: 1, WHITE: 2, BLUE: 2, GREEN: 2})
     print(g)
     print([get_color(c) for c in g.board.get_winners(g.board.tiles)])
     print(g.win_probabilities())

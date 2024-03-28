@@ -87,7 +87,7 @@ class Board:
         """Reset available bets"""
         self.round_bets = {RED: [2, 2, 3, 5], YELLOW: [2, 2, 3, 5], BLUE: [2, 2, 3, 5], GREEN: [2, 2, 3, 5], PURPLE: [2, 2, 3, 5]}
 
-    def simulate_round(self, round : list):
+    def simulate_round(self, round : list, tile_cache: dict, camel_cache : dict):
         """
         Simulate moving the camels according to rounds, which is a list of 5 (color, spaces)
         """
@@ -96,44 +96,58 @@ class Board:
         camels = np.copy(self.camels)
         tic1 = time.perf_counter()
         game_over = False
-        for (color, spaces) in round:
-            # If crazy camel rolled, and only one has toppers, move the one with toppers
-            if color in [BLACK, WHITE]:
-                # who has toppers?
-                black_loc = np.where(tiles[camels[BLACK]] == BLACK)[0][0]
-                black_top = black_loc < N_CAMELS-1 and tiles[camels[BLACK]][black_loc+1] != 0
-                white_loc = np.where(tiles[camels[WHITE]] == WHITE)[0][0]
-                white_top = white_loc < N_CAMELS-1 and tiles[camels[WHITE]][white_loc+1] != 0
-                if black_top and not white_top:
-                    color = BLACK
-                if white_top and not black_top:
-                    color = WHITE
-                spaces = -spaces
-            # Move the camel
-            my_tile = camels[color]
-            my_stack_index = np.where(tiles[my_tile] == color)[0][0]
+        for i in range(len(round)):
+            index = tuple(round[0:i+1])
+            # Use cached value if possible
+            if index in tile_cache:
+                tiles = np.copy(tile_cache[index])
+                camels = np.copy(camel_cache[index])
+            # Otherwise, simulate that rounnd
+            else:
+                color, spaces = round[i]
+                # If crazy camel rolled, and only one has toppers, move the one with toppers
+                if color in [BLACK, WHITE]:
+                    # who has toppers?
+                    black_loc = np.where(tiles[camels[BLACK]] == BLACK)[0][0]
+                    black_top = black_loc < N_CAMELS-1 and tiles[camels[BLACK]][black_loc+1] != 0
+                    white_loc = np.where(tiles[camels[WHITE]] == WHITE)[0][0]
+                    white_top = white_loc < N_CAMELS-1 and tiles[camels[WHITE]][white_loc+1] != 0
+                    if black_top and not white_top:
+                        color = BLACK
+                    if white_top and not black_top:
+                        color = WHITE
+                    spaces = -spaces
+                # Move the camel
+                my_tile = camels[color]
+                my_stack_index = np.where(tiles[my_tile] == color)[0][0]
 
-            # Put my_stack onto new tile
-            # TODO: account for -1/+1
-            # TODO: wraparound and game winning
-            if my_tile + spaces >= N_TILES:
-                game_over = True
-                np.vstack(tiles, np.zeros((my_tile + spaces - N_TILES + 1, N_CAMELS), dtype=int))
+                # Put my_stack onto new tile
+                # TODO: account for -1/+1
+                # TODO: wraparound and game winning
+                if my_tile + spaces >= N_TILES:
+                    game_over = True
+                    np.vstack(tiles, np.zeros((my_tile + spaces - N_TILES + 1, N_CAMELS), dtype=int))
 
-            # Move em camels
-            camels[tiles[my_tile][my_stack_index:]] += spaces
-            new_tile = my_tile+spaces
-            new_stack_index = get_num_camels(tiles[my_tile + spaces])
-            l = min(len(tiles[new_tile][new_stack_index:]), len(tiles[my_tile][my_stack_index:]))
-            # copy over just the relevant stuff
-            tiles[new_tile][new_stack_index:new_stack_index+l] = tiles[my_tile][my_stack_index:my_stack_index+l]
+                # Move em camels
+                camels[tiles[my_tile][my_stack_index:]] += spaces
+                new_tile = my_tile+spaces
+                new_stack_index = get_num_camels(tiles[my_tile + spaces])
+                l = min(len(tiles[new_tile][new_stack_index:]), len(tiles[my_tile][my_stack_index:]))
+                # copy over just the relevant stuff
+                tiles[new_tile][new_stack_index:new_stack_index+l] = tiles[my_tile][my_stack_index:my_stack_index+l]
 
-            # Clean up old spot
-            tiles[my_tile][my_stack_index:] = np.zeros(N_CAMELS - my_stack_index, dtype=int)
+                # Clean up old spot
+                tiles[my_tile][my_stack_index:] = np.zeros(N_CAMELS - my_stack_index, dtype=int)
 
-            # End round right away if someone won
-            if game_over:
-                return tiles, camels
+                # End round right away if someone won
+                if game_over:
+                    return tiles, camels
+
+                # Update cache if this could be useful in the future
+                if i != len(round) - 1:
+                    tile_cache[index] = np.copy(tiles)
+                    camel_cache[index] = np.copy(camels)
+
         tic2 = time.perf_counter()
         return tiles, camels, (tic0, tic1, tic2)
 
@@ -210,8 +224,10 @@ class Game:
         first_place = {RED: 0, YELLOW: 0, BLUE: 0, GREEN: 0, PURPLE: 0}
         second_place = {RED: 0, YELLOW: 0, BLUE: 0, GREEN: 0, PURPLE: 0}
         t0, t1, t2 = 0, 0, 0
+        tile_cache = {}
+        camel_cache = {}
         for round in tqdm.tqdm(self.rounds):
-            tiles, _, (n0, n1, n2) = self.board.simulate_round(round)
+            tiles, _, (n0, n1, n2) = self.board.simulate_round(round, tile_cache, camel_cache)
             t0 += n0
             t1 += n1
             t2 += n2
@@ -227,7 +243,7 @@ class Game:
 
 
 def main():
-    print("Camel up")
+    print("Camel Up")
 
     g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})
     print(g)

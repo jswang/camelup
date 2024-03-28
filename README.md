@@ -1,6 +1,16 @@
 # Camel Up Solver
-Gives the best option to play for a given camel board. <br>
-During any given round, 5/6 dice are rolled, and each die can come up 1/2/3. Thus, the number of possible ways a round could go are 6!*3^5 = 174690. Additionally, because the grey die can come up black or white, the total possible ways a round could go is 320760.
+<img src="docs/camel_up.png" width="500"><br>
+Want to vanquish your enemies in Camel Up board game? Well look no further, this solver tells you the best move to make for any board config! <br>
+So far this solver takes into account:
+- Available bets based on players
+- Ability to ally
+- Boosting +1 or -1
+
+Notably, it's missing:
+- Consideration of when to bet on overall winner
+- Consideratino of when to bet on overall loser
+
+May the odds ever be in your favor...especially now that you know the odds.
 
 ## Strategies
 In each round a player has the option to do one of the following:
@@ -55,33 +65,12 @@ This always has an expected value of 1.
 
 
 ## Development Notes
-### Round simulation code
-320760 iterations
-- first attempt, lists to store tiles: 20907.40it/s + 20913.29it/s + 22610.74it/s
-- second attempt, lists + caching: 32674.42it/s + 33418.31it/s + 33383.27it/s
-- third attempt, arrays + cache: 83228.85it/s + 82605.14it/s 81834.17it/s
+### Optimizations
+During any given round, 5/6 dice are rolled, and each die can come up 1/2/3. Thus, the number of possible ways a round could go are 6!*3^5 = 174690. Additionally, because the grey die can come up black or white, the total possible ways a round could go is 320760.
+So, to save on calculation time, I added caching and used numpy arrays. These two changes led to a 75% reduction in runtime:
 
-
-
-Y G
-RPB          WX
-----------------
-correct:
-first: [0.07398054620276842, 0.25419316623020327, 0.13835889761815687, 0.39801409153261, 0.1354532984162614]
-second: [0.10978925052999126, 0.15208567153011598, 0.29945753834642724, 0.2764029180695847, 0.16226462152388077]
-
-RED, YEllow, blue, green, purple
-0.40963337, 0.06518893, 0.19502743, 0.02658686, 0.30356341,
-0
-512
-34
-
-0
-51
-342
-
-0
-0
-51
-3
-42
+|          | Attempt #1 | Attempt #2 | Attempt #3 | Average | Average time to complete|
+| -------- | ------ |  ------- |  ------- |  -------   | --- |
+| Lists | 20907.40it/s| 20913.29it/s| 22610.74it/s| 21477 it/s| 15s |
+| Lists + caching | 32674.42it/s| 33418.31it/s| 33383.27it/s| 33158 it/s| 9.5s |
+| Arrays + caching |  83228.85it/s| 82605.14it/s| 81834.17it/s| 82555 it/s| 3.8s |

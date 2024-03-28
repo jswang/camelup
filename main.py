@@ -17,8 +17,7 @@ GREY = 7
 N_TILES = 16
 CAMELS = [RED, YELLOW, BLUE, GREEN, PURPLE, WHITE, BLACK]
 N_CAMELS = len(CAMELS)
-N_WIN_CAMELS = N_CAMELS - 2
-DICE = [RED, YELLOW, BLUE, GREEN, PURPLE, GREY]
+DICE = [RED, YELLOW , BLUE, GREEN, PURPLE, GREY]
 N_DICE = len(DICE)
 
 class Player:
@@ -84,6 +83,7 @@ def get_location(tiles, color):
     if len(rows) == len(cols) and len(rows) == 1:
         return rows[0], cols[0]
     return None, None
+
 class Board:
     def __init__(self, setup : dict=None):
         # List of camels on each tile, -1 if no camel
@@ -99,8 +99,10 @@ class Board:
             for color, tile in setup.items():
                 if color in CAMELS:
                     self.tiles[tile][get_num_camels(self.tiles[tile])] = color
-                elif color == "boosters":
-                    self.boosters = tile
+                elif color == "pos_boosters":
+                    self.boosters[tile] = 1
+                elif color == "neg_boosters":
+                    self.boosters[tile] = -1
 
     def available_booster_locations(self) -> list:
         """Return a list of available booster locations on the board"""
@@ -129,7 +131,7 @@ class Board:
         for i in range(len(round)):
             index = tuple(round[0:i+1])
             if index in tile_cache:
-                tiles = np.copy(tile_cache[index])
+                tiles, landings = np.copy(tile_cache[index][0]), np.copy(tile_cache[index][1])
             # Otherwise, simulate that round
             else:
                 color, spaces = round[i]
@@ -198,7 +200,7 @@ class Board:
 
                 # Update cache if this could be useful in the future
                 if i != len(round) - 1:
-                    tile_cache[index] = np.copy(tiles)
+                    tile_cache[index] = (np.copy(tiles), np.copy(landings))
 
         winners = self.get_winners(tiles)
         return winners, tiles, landings
@@ -220,7 +222,7 @@ def init_rounds() -> list:
                         res2.append((color[i], rolls[i]))
                 rounds.extend([res1, res2])
             else:
-                rounds.append([(color[i], rolls[i]) for i in range(5)])
+                rounds.append([(color[i], rolls[i]) for i in range(N_DICE-1)])
     return rounds
 
 class Game:
@@ -267,7 +269,6 @@ class Game:
                 elif new_val > max_val:
                     max_val = new_val
                     max_color = color
-        print(f"{vals}, {colors}: Betting values")
         return max_val, max_color
 
 
@@ -336,9 +337,11 @@ class Game:
 
         # 3. Place tile
         booster_val, booster_location, boost_type = self.best_booster_bet(me, first_place, second_place, landings)
-
-        print(f"{bet_val:.2f}: Bet {get_color_name(bet_color)}\n{ally_val:.2f}: Ally {self.players[ally_index].id}\n{booster_val:.2f}: Boost {booster_location}, {boost_type}")
-        print(f"1.00: Roll dice")
+        vals = [bet_val, ally_val, booster_val, 1]
+        options = [f"Bet {get_color_name(bet_color)}", f"Ally {self.players[ally_index].id}", f"Boost {booster_location}, {boost_type}", "Roll dice"]
+        indices = np.argsort(vals)
+        for i in indices:
+            print(f"{vals[i]:.2f}: {options[i]}")
 
 
     def win_probabilities(self, board):
@@ -389,3 +392,5 @@ def main():
     # Optimal move
     g = Game(4, setup={YELLOW: 0, RED: 0, PURPLE: 0, WHITE: 2, BLUE: 2, GREEN: 2, BLACK:5})
     g.optimal_move(g.players[0])
+
+main()

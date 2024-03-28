@@ -127,3 +127,8 @@ So, to save on calculation time, I added caching and used numpy arrays. These tw
 | Lists | 20907.40it/s| 20913.29it/s| 22610.74it/s| 21477 it/s| 15s |
 | Lists + caching | 32674.42it/s| 33418.31it/s| 33383.27it/s| 33158 it/s| 9.5s |
 | Arrays + caching |  83228.85it/s| 82605.14it/s| 81834.17it/s| 82555 it/s| 3.8s |
+
+### TODO's
+- Refactor huge main.py
+- More testcases
+- Take overall winner/loser into acount

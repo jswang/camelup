@@ -272,29 +272,35 @@ class Game:
 
         # What change in bets would i receive?
         new_board = copy.deepcopy(self.board)
-        new_board.boosters[loc] = 1
-        new_first, new_second, _ = self.win_probabilities(new_board)
-        first_delta = new_first - first
-        second_delta = new_second - second
-        last_delta = (1 - new_first - new_second) - (1- first - second)
-        change_ev = np.zeros(N_CAMELS)
-        for (color, amount) in me.bets:
-            change_ev[color] = first_delta[color] * amount + second_delta[color] + last_delta[color] * (-1)
+        ev = []
+        possible_plays = [1, -1]
+        for val in possible_plays:
+            new_board.boosters[loc] = val
+            new_first, new_second, _ = self.win_probabilities(new_board)
+            first_delta = new_first - first
+            second_delta = new_second - second
+            last_delta = (1 - new_first - new_second) - (1- first - second)
+            change_ev = np.zeros(N_CAMELS)
+            for (color, amount) in me.bets:
+                change_ev[color] = first_delta[color] * amount + second_delta[color] + last_delta[color] * (-1)
+            ev.append(np.sum(change_ev))
 
-        return landing_val + np.sum(change_ev), loc
+
+        return landing_val + max(ev), loc, possible_plays[np.argmax(ev)]
 
 
     def optimal_move(self, me: Player):
-        """Get the optimal move for a player
-            Moves available:
-            1. Choose available bet
-            2. Choose ally
-            3. Place tile
-            4. Roll dice (+1)
-            # TODO
-            5. Bet on overall winner
-            6. Bet on overall loser
-            """
+        """
+        Get the optimal move for a player
+        Moves available:
+        1. Choose available bet
+        2. Choose ally
+        3. Place tile
+        4. Roll dice (+1)
+        # TODO
+        5. Bet on overall winner
+        6. Bet on overall loser
+        """
         first_place, second_place, landings = self.win_probabilities(self.board)
 
         # 1. Choose available bet
@@ -313,9 +319,10 @@ class Game:
             ally_val = 0
 
         # 3. Place tile
-        booster_val, booster_location = self.best_booster_bet(me, first_place, second_place, landings)
+        booster_val, booster_location, boost_type = self.best_booster_bet(me, first_place, second_place, landings)
 
-        print(f"{bet_val:.2f}: Bet {get_color_name(bet_color)}\n{ally_val:.2f}: Ally {self.players[ally_index].id}\n{booster_val:.2f}: Boost {booster_location}")
+        print(f"{bet_val:.2f}: Bet {get_color_name(bet_color)}\n{ally_val:.2f}: Ally {self.players[ally_index].id}\n{booster_val:.2f}: Boost {booster_location}, {boost_type}")
+        print(f"1.00: Roll dice")
 
     def win_probabilities(self, board):
         """
@@ -364,61 +371,61 @@ def main():
     print("Camel Up")
 
     # Booster locations
-    # b = Board(setup={BLACK: 0, RED: 2, YELLOW: 2, PURPLE: 4, WHITE: 10, BLUE: 11, GREEN: 11, "boosters": np.array([0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])})
-    # assert b.available_booster_locations() == [1, 3, 7, 8, 9, 12, 13]
+    b = Board(setup={BLACK: 0, RED: 2, YELLOW: 2, PURPLE: 4, WHITE: 10, BLUE: 11, GREEN: 11, "boosters": np.array([0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])})
+    assert b.available_booster_locations() == [1, 3, 7, 8, 9, 12, 13]
 
-    # # Winning with a booster
-    # b = Board(setup={BLACK: 0, RED: 0, YELLOW: 0, PURPLE: 1, WHITE: 2, BLUE: 2, GREEN: 2, "boosters": np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])})
-    # winners, tiles, landings = b.simulate_round([(BLACK, 1)], {}, {})
-    # assert np.all(tiles == np.array([[0, 0, 0, 0, 0, 0, 0],
-    #    [5, 0, 0, 0, 0, 0, 0],
-    #    [6, 3, 4, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [7, 1, 2, 0, 0, 0, 0]]))
-    # assert np.all(winners == np.array([2, 1, 4, 3, 5]))
-    # assert np.all(landings == np.array([0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,3]))
+    # Winning with a booster
+    b = Board(setup={BLACK: 0, RED: 0, YELLOW: 0, PURPLE: 1, WHITE: 2, BLUE: 2, GREEN: 2, "boosters": np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])})
+    winners, tiles, landings = b.simulate_round([(BLACK, 1)], {}, {})
+    assert np.all(tiles == np.array([[0, 0, 0, 0, 0, 0, 0],
+       [5, 0, 0, 0, 0, 0, 0],
+       [6, 3, 4, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [7, 1, 2, 0, 0, 0, 0]]))
+    assert np.all(winners == np.array([2, 1, 4, 3, 5]))
+    assert np.all(landings == np.array([0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,3]))
 
-    # # Hopping under
-    # b = Board(setup={YELLOW: 0, RED: 0, PURPLE: 0, WHITE: 2, BLUE: 2, GREEN: 2, "boosters": np.array([0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])})
-    # winners, tiles, landings = b.simulate_round([(RED, 1)], {}, {})
-    # assert np.all(tiles == np.array([[1, 5, 2, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [6, 3, 4, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0],
-    #    [0, 0, 0, 0, 0, 0, 0]]))
-    # assert np.all(winners == np.array([4, 3, 2, 5, 1]))
-    # assert np.all(landings == np.array([0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
+    # Hopping under
+    b = Board(setup={YELLOW: 0, RED: 0, PURPLE: 0, WHITE: 2, BLUE: 2, GREEN: 2, "boosters": np.array([0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])})
+    winners, tiles, landings = b.simulate_round([(RED, 1)], {}, {})
+    assert np.all(tiles == np.array([[1, 5, 2, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [6, 3, 4, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0]]))
+    assert np.all(winners == np.array([4, 3, 2, 5, 1]))
+    assert np.all(landings == np.array([0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0]))
 
-    # # Overall probabilities
-    # g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})
-    # first, second, landings = g.win_probabilities(g.board)
-    # first = first[1:6]
-    # second = second[1:6]
-    # assert np.all(np.isclose(first, [0.07398054620276842, 0.25419316623020327, 0.13835889761815687, 0.39801409153261, 0.1354532984162614]))
-    # assert np.all(np.isclose(second, [0.10978925052999126, 0.15208567153011598, 0.29945753834642724, 0.2764029180695847, 0.16226462152388077]))
+    # Overall probabilities
+    g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})
+    first, second, landings = g.win_probabilities(g.board)
+    first = first[1:6]
+    second = second[1:6]
+    assert np.all(np.isclose(first, [0.07398054620276842, 0.25419316623020327, 0.13835889761815687, 0.39801409153261, 0.1354532984162614]))
+    assert np.all(np.isclose(second, [0.10978925052999126, 0.15208567153011598, 0.29945753834642724, 0.2764029180695847, 0.16226462152388077]))
 
     # Optimal move
     g = Game(4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14})

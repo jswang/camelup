@@ -98,6 +98,20 @@ def test_boost_points():
     g.parse_move(1, ["roll", "purple", "1"])
     assert g.players[1].points == 6
 
+def test_conclude_round():
+    g = Game(2, setup={RED: 2, YELLOW: 2, PURPLE: 2, GREEN: 2, BLUE: 5,  BLACK: 11, WHITE: 11, "neg_boosters": np.array([3])})
+    g.dice = [GREEN, PURPLE]
+    g.available_bets[BLUE] = None
+    g.available_bets[GREEN] = [2, 2]
+    g.players[0].bets =[(3, 5), (2, 3), (2, 2)]
+    g.players[1].bets = [(3, 3), (2, 5), (2, 2)]
+    g.parse_move(1, ["roll", "purple", "1"])
+    # player 0 gets: 3 - 1 + 3 + 2
+    # player 1 gets: 3 + 1 (roll) - 1 + 5 + 2
+    print(get_winners(g.board.tiles))
+    assert g.players[0].points == 7
+    assert g.players[1].points == 10
+
 
 test_parse_move()
 test_booster_locations()
@@ -106,4 +120,5 @@ test_hopping_under()
 test_overall_probability()
 test_optimal_move()
 test_boost_points()
+test_conclude_round()
 print("Passed all tests")

@@ -97,6 +97,13 @@ def get_location(tiles, color):
         return rows[0], cols[0]
     return None, None
 
+def get_winners(tiles):
+    """Returns ordering of camels on board from winner to loser, ignore WHITE and BLACK"""
+    res = tiles.flatten()
+    res = res[np.logical_and(np.logical_and(res != WHITE, res != BLACK), res != EMPTY)]
+    return np.flip(res)
+
+
 class Board:
     def __init__(self, setup : dict=None):
         # List of camels on each tile, -1 if no camel
@@ -136,13 +143,6 @@ class Board:
         occupied = set(locations) | set(booster_indices) | set(booster_indices + 1) | set(booster_indices - 1)
 
         return [x for x in range(N_TILES) if x not in occupied]
-
-
-    def get_winners(self, tiles):
-        """Returns ordering of camels on board from winner to loser, ignore WHITE and BLACK"""
-        res = tiles.flatten()
-        res = res[np.logical_and(np.logical_and(res != WHITE, res != BLACK), res != EMPTY)]
-        return np.flip(res)
 
 
     def simulate_round(self, round : list, tile_cache: dict):
@@ -220,14 +220,14 @@ class Board:
 
                 # End round right away if someone won
                 if game_over:
-                    winners = self.get_winners(tiles)
+                    winners = get_winners(tiles)
                     return winners, tiles, landings
 
                 # Update cache if this could be useful in the future
                 if i != len(round) - 1:
                     tile_cache[index] = (np.copy(tiles), np.copy(landings))
 
-        winners = self.get_winners(tiles)
+        winners = get_winners(tiles)
         return winners, tiles, landings
 
 dice_cache = {}
@@ -312,7 +312,6 @@ class Game:
         # available locations
         booster_locations = self.board.available_booster_locations()
         booster_vals = landings[booster_locations]
-        print(f"booster locations: {booster_locations}, booster vals: {booster_vals}")
         # Just pick the best one for now
         index_best = np.argmax(booster_vals)
         loc = booster_locations[index_best]
@@ -419,7 +418,8 @@ class Game:
                         max_win = win
                     player.points += win
                 # Dont forget ally winnings
-                self.players[player.ally].points += max_win
+                if player.ally is not None:
+                    self.players[player.ally].points += max_win
         self.reset_round()
 
     def __repr__(self) -> str:
@@ -545,3 +545,60 @@ def main():
 if __name__ == "__main__":
     main()
     # TODO: fix setup input, store state locally to restore
+    # BUG: didn't get correct number of point for landing on the booster
+    """
+    red: tile: 1, stack: 0
+yellow: tile: 1, stack: 1
+purple: tile: 1, stack: 2
+green: tile: 1, stack: 3
+blue: tile: 5, stack: 0
+black: tile: 11, stack: 0
+white: tile: 11, stack: 1
+positive boosters: []
+negative boosters: [3]
+
+Players: [Player 0: (points: 5, ally: None, boost: None, bets: [(3, 5), (2, 3), (2, 2)]), Player 1: (points: 4, ally: None, boost: 3, bets: [(3, 3), (2, 5), (2, 2)])]
+Dice left: red, green, purple,
+Available bets: red: 5, yellow: 5, blue: None, green: 2, purple: 5,
+Winner bets: []
+Loser bets: []
+
+Enter your move: roll red 2
+Player 0 rolled red 2
+Enter Player 1 move: print
+
+red: tile: 2, stack: 0
+yellow: tile: 2, stack: 1
+purple: tile: 2, stack: 2
+green: tile: 2, stack: 3
+blue: tile: 5, stack: 0
+black: tile: 11, stack: 0
+white: tile: 11, stack: 1
+positive boosters: []
+negative boosters: [3]
+
+Players: [Player 0: (points: 6, ally: None, boost: None, bets: [(3, 5), (2, 3), (2, 2)]), Player 1: (points: 8, ally: None, boost: 3, bets: [(3, 3), (2, 5), (2, 2)])]
+Dice left: green, purple,
+Available bets: red: 5, yellow: 5, blue: None, green: 2, purple: 5,
+Winner bets: []
+Loser bets: []
+
+
+
+Enter Player 1 move: roll purple 1
+Concluding round
+Traceback (most recent call last):
+  File "/Users/juliewang/Documents/camelup/main.py", line 546, in <module>
+    # TODO: fix setup input, store state locally to restore
+    ^^^^^^
+  File "/Users/juliewang/Documents/camelup/main.py", line 541, in main
+    curr_player = (curr_player + 1) % args.n_players
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/juliewang/Documents/camelup/main.py", line 502, in parse_move
+    print(f"Player {curr_player} rolled {color_to_str(color)} {amount}")
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/juliewang/Documents/camelup/main.py", line 422, in conclude_round
+    self.reset_round()
+            ^^^^^^^^^^^
+TypeError: list indices must be integers or slices, not NoneType
+"""

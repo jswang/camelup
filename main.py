@@ -312,9 +312,11 @@ class Game:
         # available locations
         booster_locations = self.board.available_booster_locations()
         booster_vals = landings[booster_locations]
+        print(f"booster locations: {booster_locations}, booster vals: {booster_vals}")
         # Just pick the best one for now
-        loc = booster_locations[np.argmax(booster_vals)]
-        landing_val = booster_vals[loc]
+        index_best = np.argmax(booster_vals)
+        loc = booster_locations[index_best]
+        landing_val = booster_vals[index_best]
 
         # What change in bets would i receive?
         new_board = copy.deepcopy(self.board)
@@ -520,7 +522,7 @@ def main():
     parser = argparse.ArgumentParser(description='Camel Up Game')
 
     parser.add_argument('--setup', type=str, help='Setup dictionary for the game', default={YELLOW:0, PURPLE:0, GREEN:0, RED:1, BLUE:2, BLACK:13, WHITE:13})
-    parser.add_argument('--id', type=int, help='Player id', default=1)
+    parser.add_argument('--id', type=int, help='Player id', default=0)
     parser.add_argument('--n-players', type=int, help='Number of players', default=2)
     args = parser.parse_args()
 

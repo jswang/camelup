@@ -90,12 +90,20 @@ def test_parse_move():
     # +2 from boost, +5 from roll, +1 from bet
     assert g.players[0].points == 11
 
-def test_edge_case():
+def test_boost_points():
     g = Game(2, setup={RED: 1, BLUE: 2, YELLOW: 2, PURPLE: 3, GREEN: 3,  BLACK: 13, WHITE: 13, "neg_boosters": np.array([4])})
+    g.players[0].bets = [(3, 5), (4, 5)]
+    g.players[1].bets = [(3, 3), (3, 2), (4, 3), (1, 5)]
+    g.players[1].boost = 4
+    g.parse_move(1, ["roll", "purple", "1"])
+    assert g.players[1].points == 6
+
+
 test_parse_move()
 test_booster_locations()
 test_winning_with_booster()
 test_hopping_under()
 test_overall_probability()
 test_optimal_move()
+test_boost_points()
 print("Passed all tests")

@@ -37,7 +37,7 @@ class Player:
         self.boost = None
 
     def __repr__(self) -> str:
-        return f"Player {self.id}: (points: {self.points}, ally: {self.ally}, bets: {self.bets})"
+        return f"Player {self.id}: (points: {self.points}, ally: {self.ally}, boost: {self.boost}, bets: {self.bets})"
 
 def get_num_camels(tile):
     """Return number of camels on a tile"""
@@ -441,7 +441,7 @@ class Game:
         return res
 
     def parse_move(self, curr_player, move: str) -> bool:
-        """ Parse move from player. Return True if move actually was made. print and optimal don't do anything"""
+        """Parse move from player. Return True if move actually was made. print and optimal don't do anything"""
         # optimal
         if move[0] == "optimal":
             self.optimal_move(curr_player)
@@ -487,6 +487,8 @@ class Game:
             self.players[curr_player].points += 1
             winners, tiles, landings = self.board.simulate_round([(color, amount)], {})
             self.board.tiles = tiles
+            if color == BLACK or color == WHITE:
+                color = GREY
             self.dice.remove(color)
             # Handout boost points
             for player in self.players:
@@ -541,40 +543,3 @@ def main():
 if __name__ == "__main__":
     main()
     # TODO: fix setup input, store state locally to restore
-    # bugfix, rolling black or white number
-"""
-This is a bug:
-Enter Player 1 move: print
-red: tile: 1, stack: 0
-yellow: tile: 2, stack: 1
-blue: tile: 2, stack: 0
-green: tile: 3, stack: 1
-purple: tile: 3, stack: 0
-white: tile: 13, stack: 1
-black: tile: 13, stack: 0
-
-positive boosters: []
-negative boosters: [4]
-
-Players: [Player 0: (points: 5, ally: None, bets: [(3, 5), (4, 5)]), Player 1: (points: 3, ally: None, bets: [(3, 3), (3, 2), (4, 3), (1, 5)])]
-Available bets: red: 5, yellow: 3, blue: 5, green: 2, purple: 2, white: 5, black: 5,
-Winner bets: []
-Loser bets: []
-
-Enter Player 1 move: roll green 3
-
-Calculating optimal move
-100%|████████████████████████████████████████████████████████████████████████████████████████| 90/90 [00:00<00:00, 25473.20it/s]
-Traceback (most recent call last):
-  File "/Users/juliewang/Documents/camelup/main.py", line 533, in <module>
-    main()
-  File "/Users/juliewang/Documents/camelup/main.py", line 525, in main
-    g.optimal_move(g.players[args.id])
-  File "/Users/juliewang/Documents/camelup/main.py", line 360, in optimal_move
-    booster_val, booster_location, boost_type = self.best_booster_bet(me, first_place, second_place, landings)
-                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/juliewang/Documents/camelup/main.py", line 310, in best_booster_bet
-    landing_val = booster_vals[loc]
-                  ~~~~~~~~~~~~^^^^^
-IndexError: index 10 is out of bounds for axis 0 with size 9
-"""

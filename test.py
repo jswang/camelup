@@ -92,11 +92,17 @@ def test_parse_move():
 
 def test_boost_points():
     g = Game(2, setup={RED: 1, BLUE: 2, YELLOW: 2, PURPLE: 3, GREEN: 3,  BLACK: 13, WHITE: 13, "neg_boosters": np.array([4])})
-    g.players[0].bets = [(3, 5), (4, 5)]
-    g.players[1].bets = [(3, 3), (3, 2), (4, 3), (1, 5)]
     g.players[1].boost = 4
     g.parse_move(1, ["roll", "purple", "1"])
     assert g.players[1].points == 6
+
+def test_boost_back_under():
+    g = Game(2, setup={RED: 3, BLUE: 3, YELLOW: 3, PURPLE: 3, GREEN: 3,  BLACK: 13, WHITE: 13, "neg_boosters": np.array([4])})
+    g.players[1].boost = 4
+    g.parse_move(1, ["roll", "yellow", "1"])
+    # player 1 gets 3 + 1 + 3 points
+    assert g.players[1].points == 7
+    assert np.all(g.board.tiles[3][0:5] == np.array([YELLOW, PURPLE, GREEN, RED, BLUE]))
 
 def test_conclude_round():
     g = Game(2, setup={RED: 2, YELLOW: 2, PURPLE: 2, GREEN: 2, BLUE: 5,  BLACK: 11, WHITE: 11, "neg_boosters": np.array([3])})
@@ -112,7 +118,7 @@ def test_conclude_round():
     assert g.players[0].points == 7
     assert g.players[1].points == 10
 
-
+test_boost_back_under()
 test_parse_move()
 test_booster_locations()
 test_winning_with_booster()

@@ -488,6 +488,7 @@ class Game:
         # print
         elif move[0] == "print":
             print(self)
+            return False
         else:
             print(f"Invalid move: {move}. Please try again.")
             return False
@@ -496,7 +497,7 @@ class Game:
 def main():
     parser = argparse.ArgumentParser(description='Camel Up Game')
 
-    parser.add_argument('--setup', type=str, help='Setup dictionary for the game', default={RED: 0, YELLOW: 0, PURPLE: 1, BLUE: 2, GREEN: 2,  WHITE: 13, BLACK: 14})
+    parser.add_argument('--setup', type=str, help='Setup dictionary for the game', default={YELLOW:0, PURPLE:0, GREEN:0, RED:1, BLUE:2, BLACK:13, WHITE:13})
     parser.add_argument('--id', type=int, help='Player id', default=1)
     parser.add_argument('--n-players', type=int, help='Number of players', default=2)
     args = parser.parse_args()
@@ -507,18 +508,41 @@ def main():
     print(g)
     curr_player = 0
     while True:
+        move_made = False
         # Enter what other people do
         if curr_player != args.id:
-            move = input(f"Enter Player {curr_player} move: ").lower().strip().split(' ')
-            if g.parse_move(curr_player, move):
-                curr_player = (curr_player + 1) % args.n_players
+            while not move_made:
+                move = input(f"Enter Player {curr_player} move: ").lower().strip().split(' ')
+                if g.parse_move(curr_player, move):
+                    curr_player = (curr_player + 1) % args.n_players
+                    move_made = True
         # Calculate optimal move:
         else:
             g.optimal_move(g.players[args.id])
-            move = input(f"Enter your move: ").lower().strip().split(' ')
-            while not g.parse_move(curr_player, move):
-                continue
-            curr_player = (curr_player + 1) % args.n_players
 
+            while not move_made:
+                move = input(f"Enter your move: ").lower().strip().split(' ')
+                if g.parse_move(curr_player, move):
+                    curr_player = (curr_player + 1) % args.n_players
+                    move_made = True
 if __name__ == "__main__":
     main()
+    # TODO: fix setup input, see optimal other player move
+"""
+This is probably a bug:
+red: tile: 1, stack: 0
+yellow: tile: 1, stack: 1
+blue: tile: 5, stack: 0
+green: tile: 5, stack: 1
+purple: tile: 1, stack: 2
+white: tile: 13, stack: 1
+black: tile: 13, stack: 0
+
+positive boosters: []
+negative boosters: []
+
+Players: [Player 0: (points: 5, ally: None, bets: [(3, 5), (4, 5)]), Player 1: (points: 4, ally: None, bets: [(3, 3), (3, 2), (3, 2)])]
+Available bets: red: 5, yellow: 5, blue: 5, green: None, purple: 3, white: 5, black: 5,
+Winner bets: []
+Loser bets: []
+"""

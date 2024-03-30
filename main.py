@@ -1,7 +1,7 @@
 
 import itertools
 import copy
-import tqdm
+from tqdm import tqdm
 import numpy as np
 import argparse
 import random
@@ -223,8 +223,11 @@ class Board:
         winners = self.get_winners(tiles)
         return winners, tiles, landings
 
-def get_rounds(dice) -> list:
+dice_cache = {}
+def get_rounds(dice : list) -> list:
     """Initialize all possible permutations of colors + dice rolls for a round"""
+    if tuple(dice) in dice_cache:
+        return dice_cache[tuple(dice)]
     rounds = []
     n_dice = len(dice)
     for color in itertools.permutations(dice, n_dice-1):
@@ -242,6 +245,7 @@ def get_rounds(dice) -> list:
                 rounds.extend([res1, res2])
             else:
                 rounds.append([(color[i], rolls[i]) for i in range(n_dice-1)])
+    dice_cache[tuple(dice)] = rounds
     return rounds
 
 class Game:
@@ -370,7 +374,7 @@ class Game:
         total_landings = np.zeros(N_TILES, dtype=int)
         tile_cache = {}
         rounds = get_rounds(self.dice)
-        for round in rounds:
+        for round in tqdm(rounds):
             winners, _tiles, landings = board.simulate_round(round, tile_cache)
             first_place[winners[0]] += 1
             second_place[winners[1]] += 1

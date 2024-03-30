@@ -223,15 +223,16 @@ class Board:
         winners = self.get_winners(tiles)
         return winners, tiles, landings
 
-def init_rounds() -> list:
+def get_rounds(dice) -> list:
     """Initialize all possible permutations of colors + dice rolls for a round"""
     rounds = []
-    for color in itertools.permutations(DICE, N_DICE-1):
-        for rolls in itertools.product(range(1, 4), repeat=N_DICE-1):
+    n_dice = len(dice)
+    for color in itertools.permutations(dice, n_dice-1):
+        for rolls in itertools.product(range(1, 4), repeat=n_dice-1):
             if GREY in color:
                 res1 = []
                 res2 = []
-                for i in range(N_DICE-1):
+                for i in range(n_dice-1):
                     if color[i] == GREY:
                         res1.append((BLACK, rolls[i]))
                         res2.append((WHITE, rolls[i]))
@@ -240,7 +241,7 @@ def init_rounds() -> list:
                         res2.append((color[i], rolls[i]))
                 rounds.extend([res1, res2])
             else:
-                rounds.append([(color[i], rolls[i]) for i in range(N_DICE-1)])
+                rounds.append([(color[i], rolls[i]) for i in range(n_dice-1)])
     return rounds
 
 class Game:
@@ -259,8 +260,6 @@ class Game:
         self.available_bets = {}
         for color in CAMELS:
             self.available_bets[color] = [2, 2, 3, 5]
-        # Intialize possible rounds due to dice rolls, only do this one time
-        self.rounds = init_rounds()
 
     def player_expected_values(self, first, second):
         """Based on player bets, calculate the expected value of each player's _best_ bet"""
@@ -370,13 +369,14 @@ class Game:
         second_place =  np.zeros(N_CAMELS, dtype=int)
         total_landings = np.zeros(N_TILES, dtype=int)
         tile_cache = {}
-        for round in tqdm.tqdm(self.rounds):
+        rounds = get_rounds(self.dice)
+        for round in rounds:
             winners, _tiles, landings = board.simulate_round(round, tile_cache)
             first_place[winners[0]] += 1
             second_place[winners[1]] += 1
             total_landings += landings
         # Calculate probability of each camel winning
-        total = len(self.rounds)
+        total = len(rounds)
         fp = first_place / total
         sp = second_place / total
         return fp, sp, total_landings / total

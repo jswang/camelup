@@ -67,6 +67,8 @@ def str_to_color(value: str):
         return WHITE
     elif value == "black":
         return BLACK
+    elif value == "grey":
+        return GREY
     return None
 
 def color_to_str(value):
@@ -84,8 +86,12 @@ def color_to_str(value):
         return "white"
     elif value == BLACK:
         return "black"
+    elif value == GREY:
+        return "grey"
+    return None
 
 def get_location(tiles, color):
+    """ Returns location of this color in tiles, None if not found"""
     rows, cols = np.where(tiles == color)
     if len(rows) == len(cols) and len(rows) == 1:
         return rows[0], cols[0]
@@ -103,11 +109,11 @@ class Board:
 
     def __repr__(self) -> str:
         res = ""
-        for c in CAMELS:
-            tile,stack = get_location(self.tiles, c)
-            res += f"{color_to_str(c)}: tile: {tile}, stack: {stack}\n"
-        res += "\n"
-        # indices of positive boosters
+        # Print out camels on each tile
+        for (tile_index, t) in enumerate(self.tiles):
+            for (stack_index, c) in enumerate(get_camels(t)):
+                res += f"{color_to_str(c)}: tile: {tile_index}, stack: {stack_index}\n"
+        # Booster locations
         res += f"positive boosters: {np.where(self.boosters > 0)[0]}\n"
         res += f"negative boosters: {np.where(self.boosters < 0)[0]}\n"
         return res
@@ -327,7 +333,7 @@ class Game:
         return landing_val + max(ev), loc, possible_plays[np.argmax(ev)]
 
 
-    def optimal_move(self, me: Player):
+    def optimal_move(self, player_id: int):
         """
         Get the optimal move for a player
         Moves available:
@@ -348,8 +354,9 @@ class Game:
         # 2. Choose ally, if possible
         player_ev = self.player_expected_values(first_place, second_place)
         for (i, player) in enumerate(self.players):
-            if player.id == me.id:
+            if player.id == player_id:
                 player_ev[i] = -np.inf
+                me = player
             if player.ally is not None:
                 player_ev[i] = -np.inf
         ally_val, ally_index = np.max(player_ev), np.argmax(player_ev)
@@ -417,9 +424,12 @@ class Game:
         """
         Print the game status
         """
-        res = f"{self.board}\n"
+        res = f"\n{self.board}\n"
         res += f"Players: {self.players}\n"
-        res += f"Available bets: "
+        res += f"Dice left: "
+        for d in self.dice:
+            res += f"{color_to_str(d)}, "
+        res += f"\nAvailable bets: "
         for k,v in self.available_bets.items():
             if len(v) == 0:
                 res += f"{color_to_str(k)}: None, "
@@ -431,8 +441,13 @@ class Game:
         return res
 
     def parse_move(self, curr_player, move: str) -> bool:
+        """ Parse move from player. Return True if move actually was made. print and optimal don't do anything"""
+        # optimal
+        if move[0] == "optimal":
+            self.optimal_move(curr_player)
+            return False
         # bet <color>
-        if move[0] == "bet":
+        elif move[0] == "bet":
             color = str_to_color(move[1])
             if len(self.available_bets[color]) == 0:
                 print(f"Invalid move: {move}. Please try again.")
@@ -513,26 +528,19 @@ def main():
     print(g)
     curr_player = 0
     while True:
-        move_made = False
-        # Enter what other people do
-        if curr_player != args.id:
-            while not move_made:
-                move = input(f"Enter Player {curr_player} move: ").lower().strip().split(' ')
-                if g.parse_move(curr_player, move):
-                    curr_player = (curr_player + 1) % args.n_players
-                    move_made = True
-        # Calculate optimal move:
+        if curr_player == args.id:
+            s = "your"
         else:
-            g.optimal_move(g.players[args.id])
+            s = f"Player {curr_player}"
+        move = input(f"Enter {s} move: ").lower().strip().split(' ')
+        # Advance to next player if this player made a move
+        if g.parse_move(curr_player, move):
+            curr_player = (curr_player + 1) % args.n_players
 
-            while not move_made:
-                move = input(f"Enter your move: ").lower().strip().split(' ')
-                if g.parse_move(curr_player, move):
-                    curr_player = (curr_player + 1) % args.n_players
-                    move_made = True
+
 if __name__ == "__main__":
     main()
-    # TODO: fix setup input, see optimal other player move, not have bet stack for white and black, store state locally to restore
+    # TODO: fix setup input, store state locally to restore
     # bugfix, rolling black or white number
 """
 This is a bug:

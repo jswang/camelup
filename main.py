@@ -18,6 +18,7 @@ GREY = 7
 
 N_TILES = 16
 CAMELS = [RED, YELLOW, BLUE, GREEN, PURPLE, WHITE, BLACK]
+WIN_CAMELS = [RED, YELLOW, BLUE, GREEN, PURPLE]
 N_CAMELS = len(CAMELS)
 DICE = [RED, YELLOW , BLUE, GREEN, PURPLE, GREY]
 N_DICE = len(DICE)
@@ -262,7 +263,7 @@ class Game:
         self.loser_bets = []
         # Available
         self.available_bets = {}
-        for color in CAMELS:
+        for color in WIN_CAMELS:
             self.available_bets[color] = [2, 2, 3, 5]
 
     def player_expected_values(self, first, second):
@@ -389,7 +390,7 @@ class Game:
         """Reset a round"""
         self.dice = DICE.copy()
         self.available_bets = {}
-        for color in CAMELS:
+        for color in WIN_CAMELS:
             self.available_bets[color] = [2, 2, 3, 5]
 
     def conclude_round(self, winners):
@@ -531,22 +532,41 @@ def main():
                     move_made = True
 if __name__ == "__main__":
     main()
-    # TODO: fix setup input, see optimal other player move
+    # TODO: fix setup input, see optimal other player move, not have bet stack for white and black, store state locally to restore
+    # bugfix, rolling black or white number
 """
-This is probably a bug:
+This is a bug:
+Enter Player 1 move: print
 red: tile: 1, stack: 0
-yellow: tile: 1, stack: 1
-blue: tile: 5, stack: 0
-green: tile: 5, stack: 1
-purple: tile: 1, stack: 2
+yellow: tile: 2, stack: 1
+blue: tile: 2, stack: 0
+green: tile: 3, stack: 1
+purple: tile: 3, stack: 0
 white: tile: 13, stack: 1
 black: tile: 13, stack: 0
 
 positive boosters: []
-negative boosters: []
+negative boosters: [4]
 
-Players: [Player 0: (points: 5, ally: None, bets: [(3, 5), (4, 5)]), Player 1: (points: 4, ally: None, bets: [(3, 3), (3, 2), (3, 2)])]
-Available bets: red: 5, yellow: 5, blue: 5, green: None, purple: 3, white: 5, black: 5,
+Players: [Player 0: (points: 5, ally: None, bets: [(3, 5), (4, 5)]), Player 1: (points: 3, ally: None, bets: [(3, 3), (3, 2), (4, 3), (1, 5)])]
+Available bets: red: 5, yellow: 3, blue: 5, green: 2, purple: 2, white: 5, black: 5,
 Winner bets: []
 Loser bets: []
+
+Enter Player 1 move: roll green 3
+
+Calculating optimal move
+100%|████████████████████████████████████████████████████████████████████████████████████████| 90/90 [00:00<00:00, 25473.20it/s]
+Traceback (most recent call last):
+  File "/Users/juliewang/Documents/camelup/main.py", line 533, in <module>
+    main()
+  File "/Users/juliewang/Documents/camelup/main.py", line 525, in main
+    g.optimal_move(g.players[args.id])
+  File "/Users/juliewang/Documents/camelup/main.py", line 360, in optimal_move
+    booster_val, booster_location, boost_type = self.best_booster_bet(me, first_place, second_place, landings)
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/juliewang/Documents/camelup/main.py", line 310, in best_booster_bet
+    landing_val = booster_vals[loc]
+                  ~~~~~~~~~~~~^^^^^
+IndexError: index 10 is out of bounds for axis 0 with size 9
 """

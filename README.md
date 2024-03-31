@@ -1,15 +1,10 @@
 # Camel Up Solver
+<p align="center">
 <img src="docs/camel_up.png" width="500"><br>
-Want to vanquish your enemies in Camel Up? Well look no further, this solver tells you the best move to make! The solver takes into account:
-- Available bets based on players
-- Ability to ally
-- Boosting +1 or -1
+</p>
 
-Notably, it's missing:
-- When to bet on overall winner
-- When to bet on overall loser
+This respository is a solver for the hit game "Camel Up". It takes into account the state of the board, player bets, and your bets to give the move that maximizes the expected value.
 
-May the odds ever be in your favor...especially now that you know the odds.
 
 ## Usage instructions
 Note that everything is index by 0, this differs from the tiles on the board which are index by 1.

@@ -1,6 +1,43 @@
 import numpy as np
 from camelup.constants import *
-from camelup.board import Board
+from camelup.board import Board, Player
+
+
+def test_equality_players():
+    p0 = Player(0)
+    p1 = Player(0)
+    assert p0 == p1
+
+
+def test_equal_board():
+    # Equal board
+    b = Board(
+        setup={
+            BLACK: 0,
+            RED: 1,
+            YELLOW: 1,
+            PURPLE: 2,
+            WHITE: 2,
+            BLUE: 0,
+            GREEN: 0,
+            "pos_boosters": np.array([1]),
+            "neg_boosters": np.array([7]),
+        }
+    )
+    b2 = Board(
+        setup={
+            BLACK: 0,
+            RED: 1,
+            YELLOW: 1,
+            PURPLE: 2,
+            WHITE: 2,
+            BLUE: 0,
+            GREEN: 0,
+            "pos_boosters": np.array([1]),
+            "neg_boosters": np.array([7]),
+        }
+    )
+    assert b == b2
 
 
 def test_booster_locations():

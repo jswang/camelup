@@ -47,6 +47,39 @@ class Player:
     def __repr__(self) -> str:
         return f"Player {self.id}: (points: {self.points}, ally: {self.ally}, boost: {self.boost}, bets: {self.bets})"
 
+    def __eq__(self, other) -> bool:
+        return (
+            self.id == other.id
+            and self.points == other.points
+            and self.winner_bet == other.winner_bet
+            and self.loser_bet == other.loser_bet
+            and self.ally == other.ally
+            and self.boost == other.boost
+            and self.bets == other.bets
+        )
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "points": self.points,
+            "winner_bet": self.winner_bet,
+            "loser_bet": self.loser_bet,
+            "ally": self.ally,
+            "boost": self.boost,
+            "bets": self.bets,
+        }
+
+    @classmethod
+    def from_json(cls, data):
+        player = cls(data["id"])
+        player.points = data["points"]
+        player.winner_bet = data["winner_bet"]
+        player.loser_bet = data["loser_bet"]
+        player.ally = data["ally"]
+        player.boost = data["boost"]
+        player.bets = data["bets"]
+        return player
+
 
 class Board:
     def __init__(self, setup: dict = None):
@@ -67,6 +100,21 @@ class Board:
         res += f"positive boosters: {np.where(self.boosters > 0)[0]}\n"
         res += f"negative boosters: {np.where(self.boosters < 0)[0]}\n"
         return res
+
+    def __eq__(self, other) -> bool:
+        return np.all(self.tiles == other.tiles) and np.all(
+            self.boosters == other.boosters
+        )
+
+    def to_json(self):
+        return {"tiles": self.tiles.tolist(), "boosters": self.boosters.tolist()}
+
+    @classmethod
+    def from_json(cls, data):
+        board = cls()
+        board.tiles = np.array(data["tiles"].copy())
+        board.boosters = np.array(data["boosters"].copy())
+        return board
 
     def parse_setup(self, setup):
         """Parse setup dictionary and set up board accordingly"""

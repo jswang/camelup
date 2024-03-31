@@ -53,6 +53,41 @@ class Game:
         # game over
         self.game_over = False
 
+    def __eq__(self, other):
+        return (
+            self.board == other.board
+            and self.players == other.players
+            and self.dice == other.dice
+            and self.winner_bets == other.winner_bets
+            and self.loser_bets == other.loser_bets
+            and self.available_bets == other.available_bets
+            and self.game_over == other.game_over
+        )
+
+    def to_json(self):
+        return {
+            "players": [p.to_json() for p in self.players],
+            "board": self.board.to_json(),
+            "dice": self.dice,
+            "winner_bets": self.winner_bets,
+            "loser_bets": self.loser_bets,
+            "available_bets": self.available_bets,
+            "game_over": self.game_over,
+        }
+
+    # construct Game from json
+    @classmethod
+    def from_json(cls, data):
+        game = cls(len(data["players"]))
+        game.players = [Player.from_json(i) for i in data["players"]]
+        game.board = Board.from_json(data["board"])
+        game.dice = data["dice"]
+        game.winner_bets = data["winner_bets"]
+        game.loser_bets = data["loser_bets"]
+        game.available_bets = {int(k): v for k, v in data["available_bets"].items()}
+        game.game_over = data["game_over"]
+        return game
+
     def bet(self, player_id: int, color: int):
         """Place a bet on a color"""
         if len(self.available_bets[color]) == 0:

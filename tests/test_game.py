@@ -10,6 +10,16 @@ def game():
     return Game(4)
 
 
+def test_equality_game():
+    g = Game(
+        4, setup={YELLOW: 0, PURPLE: 0, GREEN: 0, RED: 1, BLUE: 2, BLACK: 13, WHITE: 13}
+    )
+    g2 = Game(
+        4, setup={YELLOW: 0, PURPLE: 0, GREEN: 0, RED: 1, BLUE: 2, BLACK: 13, WHITE: 13}
+    )
+    assert g == g2
+
+
 def test_check_user_input_easy(game):
     # easy ones
     assert game.check_user_input(0, "") is None

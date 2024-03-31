@@ -4,61 +4,34 @@
 </p>
 
 This respository is a solver for the hit game "Camel Up". It takes into account the state of the board, player bets, and your bets to give the move that maximizes the expected value.
+<br>
+When requested, you get a printout with the expected value of playing a particular move, ordered from best to worst options:
+```
+3.24: Bet red
+1.07: Boost location 3, 1
+1.00: Roll dice
+0.00: Ally Player 0
+```
 
 
 ## Usage instructions
-Note that everything is index by 0, this differs from the tiles on the board which are index by 1.
+Note that tiles and player id's are index by 0. This differs from the tiles on the board which are index by 1.
 
-1. Enter the game initial setup. Order matters for stacking, here red will end up below yellow.
+1. Enter the game initial setup by editing main.py, then call main.py with your id and number of players. Here, there are two players and I am going second.
 ```python
-python3 main.py --setup {RED: 0, YELLOW: 0, PURPLE: 1, BLUE: 2, GREEN: 2,  WHITE: 13, BLACK: 14}, --id=1, --n-players=2
-# Prints
-Camel Up!!!
-
-red: tile: 0, stack: 0
-yellow: tile: 0, stack: 1
-blue: tile: 2, stack: 0
-green: tile: 2, stack: 1
-purple: tile: 1, stack: 0
-white: tile: 13, stack: 0
-black: tile: 14, stack: 0
-
-positive boosters: []
-negative boosters: []
-
-Players: [Player 0: (points: 3, ally: None, bets: []), Player 1: (points: 3, ally: None, bets: [])]
-Available bets: red: 5, yellow: 5, blue: 5, green: 5, purple: 5, white: 5, black: 5,
-Winner bets: []
-Loser bets: []
-
-Enter Player 0 move:
+python3 main.py --id=1, --n-players=2
 ```
 
-2. Enter the other player's moves using one of the following:
-```
-bet <color>
-ally <player_id>
-boost <location> <1/-1>
-roll <color> <amount>
-winner
-loser
-```
-You can always get the solver's picture of the world using:
-```
-print
-```
-3. When it's your turn to play, the optimal options will be calculate for you, then you enter what you did. It takes ~12s to calculate the optimal move. You'll get a printout like:
-```
-Calculating optimal move
-100%|███████████████████████████████████████| 320760/320760 [00:04<00:00, 70470.56it/s]
-100%|███████████████████████████████████████| 320760/320760 [00:04<00:00, 67013.47it/s]
-100%|███████████████████████████████████████| 320760/320760 [00:04<00:00, 67704.38it/s]
-1.94: Bet green
-1.00: Roll dice
-0.83: Ally Player 0
-0.22: Boost location 3, 1
-Enter your move:
-```
+2. You will then be prompted to enter you or other player's moves, the board and game state will update accordingly. Every round, you have the option of entering:
+- `print`: Print the state of the game and board
+- `optimal`: Run calculation for optimal move
+- `bet {red, yellow, green, blue, purple}`: Bet on a camel to win, will take highest available bet
+- `ally <player_id>`: Ally with another player
+- `boost <location> <1/-1>`: Boost a location with a +1 or a -1
+- `roll {red, yellow, green, blue, purple} {1,2,3}`: Record a roll of the die
+- `winner`: Record an overall winner
+- `loser`: Record an overall loser
+
 
 ## Strategies
 In each round a player has the option to do one of the following:
@@ -124,6 +97,4 @@ So, to save on calculation time, I added caching and used numpy arrays. These tw
 | Arrays + caching |  83228.85it/s| 82605.14it/s| 81834.17it/s| 82555 it/s| 3.8s |
 
 ### TODO's
-- Refactor huge main.py
-- More testcases
 - Take overall winner/loser into acount

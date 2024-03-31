@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
 
     print("Camel Up!!!\n")
-    # TODO make this better
+    # TODO make inputting setup easier
     setup = {
         YELLOW: 0,
         PURPLE: 0,
@@ -50,10 +50,8 @@ def main():
             with open(save_file, "w") as f:
                 json.dump(g.to_json(), f)
             curr_player = (curr_player + 1) % args.n_players
-    # TODO give overall winner
 
 
 if __name__ == "__main__":
     main()
     # TODO: fix setup input, store state locally to restore
-    # BUG: didn't get correct number of point for landing on the booster

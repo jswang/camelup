@@ -5,24 +5,26 @@
 
 This respository is a solver for the hit game "Camel Up". It takes into account the state of the board, player bets, and your bets to give the move that maximizes the expected value.
 <br>
-When requested, you get a printout with the expected value of playing a particular move, ordered from best to worst options:
+When requested, you get a printout with the expected value of playing a particular move, ordered from best to worst options. For example, if you got:
 ```
 3.24: Bet red
 1.07: Boost location 3, 1
 1.00: Roll dice
 0.00: Ally Player 0
 ```
+Your best option is to bet on the red camel.
 
 
 ## Usage instructions
-Note that tiles and player id's are index by 0. This differs from the tiles on the board which are index by 1.
+Tiles and player ids are index by 0. This differs from the board labels which are index by 1.
 
 1. Enter the game initial setup by editing main.py, then call main.py with your id and number of players. Here, there are two players and I am going second.
 ```python
-python3 main.py --id=1, --n-players=2
+python3 main.py --id=1 --n-players=2
 ```
+You also have the option of loading an existing game state, which is automatically saved locally as `current_game.json`
 
-2. You will then be prompted to enter you or other player's moves, the board and game state will update accordingly. Every round, you have the option of entering:
+1. You will then be prompted to enter you or other player's moves, the board and game state will update accordingly. Every round, you have the option of entering:
 - `print`: Print the state of the game and board
 - `optimal`: Run calculation for optimal move
 - `bet {red, yellow, green, blue, purple}`: Bet on a camel to win, will take highest available bet
@@ -37,7 +39,7 @@ python3 main.py --id=1, --n-players=2
 In each round a player has the option to do one of the following:
 1. Choose available bet
 2. Choose ally
-3. Place tile
+3. Place booster
 4. Roll dice (+1)
 5. Bet on overall winner (TODO)
 6. Bet on overall loser (TODO)

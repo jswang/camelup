@@ -44,6 +44,11 @@ class Player:
         # location of boost
         self.boost = None
 
+    def reset_round(self):
+        self.ally = None
+        self.bets = []
+        self.boost = None
+
     def __repr__(self) -> str:
         return f"Player {self.id}: (points: {self.points}, ally: {self.ally}, boost: {self.boost}, bets: {self.bets})"
 
@@ -115,6 +120,9 @@ class Board:
         board.tiles = np.array(data["tiles"].copy())
         board.boosters = np.array(data["boosters"].copy())
         return board
+
+    def reset_round(self):
+        self.boosters = np.zeros(N_TILES, dtype=int)
 
     def parse_setup(self, setup):
         """Parse setup dictionary and set up board accordingly"""

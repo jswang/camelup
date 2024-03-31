@@ -213,6 +213,9 @@ class Game:
         """Reset a round"""
         self.dice = DICE.copy()
         self.available_bets = {color: [2, 2, 3, 5] for color in WIN_CAMELS}
+        self.board.reset_round()
+        for player in self.players:
+            player.reset_round()
 
     def conclude_round(self, winners):
         """Distribute winnings and reset"""

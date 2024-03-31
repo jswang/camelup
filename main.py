@@ -38,7 +38,6 @@ def main():
         save_file = "current_game.json"
         g = Game(args.n_players, setup)
 
-    curr_player = 0
     while not g.game_over:
         if curr_player == args.id:
             s = "your"
@@ -55,3 +54,31 @@ def main():
 if __name__ == "__main__":
     main()
     # TODO: fix setup input, store state locally to restore
+
+"""
+add caching during optimal move check as well
+add boost function
+
+red: tile: 0, stack: 0
+purple: tile: 0, stack: 1
+yellow: tile: 0, stack: 2
+blue: tile: 1, stack: 0
+green: tile: 2, stack: 0
+white: tile: 14, stack: 0
+black: tile: 15, stack: 0
+positive boosters: []
+negative boosters: []
+
+Players: [Player 0: (points: 3, ally: None, boost: None, bets: []), Player 1: (points: 3, ally: None, boost: None, bets: [])]
+Dice left: red, yellow, blue, green, purple, grey,
+Available bets: red: 5, yellow: 5, blue: 5, green: 5, purple: 5,
+Winner bets: []
+Loser bets: []
+
+.95: Boost location 3, 1
+1.71: Bet yellow
+1.00: Roll dice
+0.00: Ally Player 0
+
+seems like should be boost -1 not boost +2
+"""

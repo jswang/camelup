@@ -26,7 +26,7 @@ def get_winners(tiles):
         res.extend(l)
     res.reverse()
     for x in [WHITE, BLACK, BOOST_POS, BOOST_NEG]:
-        if x in res:
+        while x in res:
             res.remove(x)
     return res
 

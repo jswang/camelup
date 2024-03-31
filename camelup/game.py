@@ -262,13 +262,13 @@ class Game:
                 print(f"Invalid player id: {player_id}. Please try again.")
                 return None
             if self.players[player_id].ally is not None:
-                print(f"Player {player_id} already has an ally")
+                print(f"Invalid ally: Player {player_id} already has an ally")
                 return None
             if self.players[curr_player].ally is not None:
-                print(f"Player {curr_player} already has an ally")
+                print(f"Invalid ally: Player {curr_player} already has an ally")
                 return None
             if curr_player == player_id:
-                print(f"Player {curr_player} cannot ally with themselves")
+                print(f"Invalid ally: Player {curr_player} cannot ally with themselves")
                 return None
             print(f"Player {curr_player} allied Player {player_id}")
             return ("ally", player_id)
@@ -300,13 +300,28 @@ class Game:
                 return None
             else:
                 color = str_to_color(move[1])
-                if color is None or color not in self.dice:
-                    print(f"Unavailable color: {move[1]}. Please try again.")
+                if color is None:
+                    print(f"Invalid color: {move[1]}. Please try again.")
+                    return None
+                # Special checks for black/white mapping to grey
+                if color in [BLACK, WHITE] and GREY not in self.dice:
+                    print(f"Invalid color: {move[1]}. Please try again.")
+                    return None
+                elif color not in [BLACK, WHITE] and color not in self.dice:
+                    print(f"Invalid color: {move[1]}. Please try again.")
+                    return None
+                # Can't roll a grey, must enter black or white
+                if color == GREY:
+                    print(
+                        f"Invalid color: {move[1]}, use black or white. Please try again."
+                    )
                     return None
                 try:
                     amount = int(move[2])
                 except:
-                    print(f"Non integer roll amount: {move[2]}. Please try again.")
+                    print(
+                        f"Invalid Non integer roll amount: {move[2]}. Please try again."
+                    )
                     return None
                 if amount < 1 or amount > 3:
                     print(f"Invalid roll amount: {amount}. Please try again.")
@@ -337,7 +352,7 @@ class Game:
             self.optimal_move(curr_player)
             return False
         # print
-        elif cmd[0] == "print":
+        elif cmd == "print":
             print(self)
             return False
 
@@ -388,11 +403,11 @@ class Game:
                 self.game_over = True
                 print("Game over")
         # winner
-        elif cmd[0] == "winner":
+        elif cmd == "winner":
             self.winner_bets.append(curr_player)
             print(f"Player {curr_player} bet on overall winner")
         # loser
-        elif cmd[0] == "loser":
+        elif cmd == "loser":
             self.loser_bets.append(curr_player)
             print(f"Player {curr_player} bet on overall loser")
         else:

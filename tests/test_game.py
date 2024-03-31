@@ -64,8 +64,12 @@ def test_roll(game):
     assert game.check_user_input(0, "roll purple 3") == ("roll", PURPLE, 3)
     assert game.check_user_input(0, "roll red 4") is None
     assert game.check_user_input(0, "roll asldkjf 1") is None
-    game.dice = [RED, YELLOW, BLUE, GREEN]
+    game.dice = [RED, YELLOW, BLUE, GREEN, GREY]
     assert game.check_user_input(0, "roll purple 1") is None
+    assert game.check_user_input(0, "roll grey 1") is None
+    assert game.check_user_input(0, "roll black 1") == ("roll", BLACK, 1)
+    game.dice = [RED, YELLOW, BLUE, GREEN, GREY]
+    assert game.check_user_input(0, "roll white 2") == ("roll", WHITE, 2)
 
 
 def test_optimal_move():
@@ -102,6 +106,13 @@ def test_parse_move():
     g.parse_move(0, "roll purple 2")
     # +2 from boost, +5 from roll, +1 from bet
     assert g.players[0].points == 11
+
+
+def test_parse_move_easy(game):
+    game.parse_move(0, "winner")
+    assert len(game.winner_bets) == 1
+    game.parse_move(0, "loser")
+    assert len(game.loser_bets) == 1
 
 
 def test_boost_points():

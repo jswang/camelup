@@ -17,21 +17,26 @@ def main():
     curr_player = 0
     for i, move in tqdm(enumerate(moves)):
         if move == "bet":
-            move += f" {np.random.choice(WIN_CAMELS)}"
+            move += f" {color_to_str(np.random.choice(WIN_CAMELS))}"
         elif move == "ally":
             move += f" {np.random.randint(0, len(game.players))}"
         elif move == "boost":
             move += f" {np.random.randint(0, N_TILES)} {np.random.choice([-1, 1])}"
         elif move == "roll":
-            move += f" {np.random.choice(DICE)} {np.random.randint(1, 4)}"
+            d = np.random.choice(game.dice)
+            if d == GREY:
+                d = np.random.choice([BLACK, WHITE])
+            move += f" {color_to_str(d)} {np.random.randint(1, 4)}"
         elif move == "winner":
             move += f" {np.random.choice(WIN_CAMELS)}"
         elif move == "loser":
             move += f" {np.random.choice(WIN_CAMELS)}"
-        print(f"i: {i}, move: {move}")
+        print(f"\ni: {i}, move: {move}")
         # Advance to next player if this player made a move
         if game.parse_move(curr_player, move):
             curr_player = (curr_player + 1) % len(game.players)
+        if game.game_over:
+            break
 
 
 if __name__ == "__main__":

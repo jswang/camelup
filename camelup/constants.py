@@ -38,9 +38,9 @@ def str_to_color(value: str):
         return BLACK
     elif value == "grey":
         return GREY
-    elif value == "boost_pos":
+    elif value == "+":
         return BOOST_POS
-    elif value == "boost_neg":
+    elif value == "-":
         return BOOST_NEG
     return None
 
@@ -63,7 +63,7 @@ def color_to_str(value):
     elif value == GREY:
         return "grey"
     elif value == BOOST_POS:
-        return "boost_pos"
+        return "+"
     elif value == BOOST_NEG:
-        return "boost_neg"
+        return "-"
     return None

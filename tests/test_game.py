@@ -257,3 +257,47 @@ def test_best_available_bet(game):
     assert game.best_available_bet(first, second) == (3, 1)
     game.available_bets[1] = [2, 2]
     assert game.best_available_bet(first, second) == (pytest.approx(2.2), 0)
+
+
+def test_best_booster_bet():
+    g = Game(
+        2,
+        setup={
+            RED: 0,
+            PURPLE: 0,
+            YELLOW: 0,
+            BLUE: 1,
+            GREEN: 2,
+            WHITE: 14,
+            BLACK: 15,
+        },
+    )
+    g.dice = [RED, YELLOW, BLUE, GREEN, PURPLE]
+    booster_val, booster_location, boost_type = g.best_booster_bet(
+        0,
+        [0.07582305, 0.38148148, 0.1409465, 0.24403292, 0.15771605],
+        [0.11563786, 0.22088477, 0.18292181, 0.21944444, 0.26111111],
+        np.array(
+            [
+                0.0,
+                9.33333333e-01,
+                1.39,
+                1.92,
+                1.12,
+                0.68,
+                0.17,
+                0.043,
+                0.0179,
+                0.003,
+                0,
+                0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ]
+        ),
+    )
+    assert booster_location == 3
+    assert booster_val == pytest.approx(4.0341975)
+    assert boost_type == BOOST_NEG

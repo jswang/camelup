@@ -4,6 +4,26 @@ from camelup.board import Board, simulate_round
 from camelup.player import Player
 
 
+def test_init():
+    setup = {
+        YELLOW: 0,
+        RED: 0,
+        PURPLE: 0,
+        WHITE: 2,
+        BLUE: 2,
+        GREEN: 2,
+        BLACK: 5,
+        BOOST_POS: [10, 11, 13],
+        BOOST_NEG: [1, 2, 3],
+    }
+    b = Board(setup=setup)
+    x = b.to_dict()
+    for c in CAMELS:
+        assert x[c] == setup[c]
+    assert x[BOOST_POS] == setup[BOOST_POS]
+    assert x[BOOST_NEG] == setup[BOOST_NEG]
+
+
 def test_equality_players():
     p0 = Player(0)
     p1 = Player(0)

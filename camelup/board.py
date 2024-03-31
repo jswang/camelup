@@ -48,9 +48,6 @@ class Board:
     def __eq__(self, other) -> bool:
         return np.all(self.tiles == other.tiles)
 
-    def to_json(self):
-        return {"tiles": self.tiles.tolist()}
-
     def to_tuple(self):
         x = []
         for i, l in self.tiles.items():
@@ -62,12 +59,6 @@ class Board:
         board = cls()
         for i, l in data:
             board.tiles[i] = list(l)
-        return board
-
-    @classmethod
-    def from_json(cls, data):
-        board = cls()
-        board.tiles = np.array(data["tiles"].copy())
         return board
 
     def reset_round(self):
@@ -101,9 +92,33 @@ class Board:
         """Add booster to location"""
         self.tiles[location].append(booster)
 
+    def to_dict(self) -> dict:
+        """Put self into a setup dictionary"""
+        res = {}
+        for tile, l in self.tiles.items():
+            for thing in l:
+                if thing in CAMELS:
+                    res[thing] = tile
+                elif thing == BOOST_POS:
+                    if BOOST_POS not in res:
+                        res[BOOST_POS] = [tile]
+                    else:
+                        res[BOOST_POS].append(tile)
+                elif thing == BOOST_NEG:
+                    if BOOST_NEG not in res:
+                        res[BOOST_NEG] = [tile]
+                    else:
+                        res[BOOST_NEG].append(tile)
+        if BOOST_POS in res:
+            res[BOOST_POS].sort()
+        if BOOST_NEG in res:
+            res[BOOST_NEG].sort()
+        return res
+
     def parse_setup(self, setup):
         """Parse setup dictionary and set up board accordingly"""
         for thing, tile in setup.items():
+            thing = int(thing)
             if thing in CAMELS:
                 self.tiles[tile].append(thing)
             if thing == BOOST_POS:

@@ -16,7 +16,15 @@ def main():
 
     print("Camel Up!!!\n")
     # TODO make inputting setup easier
-    setup = {YELLOW: 0, PURPLE: 0, GREEN: 0, RED: 1, BLUE: 2, BLACK: 13, WHITE: 13}
+    setup = {
+        RED: 0,
+        PURPLE: 0,
+        YELLOW: 0,
+        BLUE: 1,
+        GREEN: 2,
+        WHITE: 14,
+        BLACK: 15,
+    }
 
     # If specified, load game from save file
     if args.save_file:
@@ -46,9 +54,6 @@ if __name__ == "__main__":
     # TODO: fix setup input, store state locally to restore
 
 """
-add caching during optimal move check as well
-add boost function
-
 red: tile: 0, stack: 0
 purple: tile: 0, stack: 1
 yellow: tile: 0, stack: 2

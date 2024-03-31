@@ -37,8 +37,8 @@ def win_probabilities(dice: tuple, board: tuple):
     """
     Calculate the probability of each camel winning
     """
-    first_place = np.zeros(N_CAMELS, dtype=int)
-    second_place = np.zeros(N_CAMELS, dtype=int)
+    first_place = np.zeros(len(WIN_CAMELS), dtype=int)
+    second_place = np.zeros(len(WIN_CAMELS), dtype=int)
     total_landings = np.zeros(N_TILES, dtype=int)
     rounds = get_rounds(dice)
     for round in tqdm(rounds):
@@ -91,7 +91,7 @@ class Game:
     def to_json(self):
         return {
             "players": [p.to_json() for p in self.players],
-            "board": self.board.to_json(),
+            "board": self.board.to_dict(),
             "dice": self.dice,
             "winner_bets": self.winner_bets,
             "loser_bets": self.loser_bets,
@@ -104,7 +104,7 @@ class Game:
     def from_json(cls, data):
         game = cls(len(data["players"]))
         game.players = [Player.from_json(i) for i in data["players"]]
-        game.board = Board.from_json(data["board"])
+        game.board = Board(setup=data["board"])
         game.dice = data["dice"]
         game.winner_bets = data["winner_bets"]
         game.loser_bets = data["loser_bets"]
@@ -176,7 +176,7 @@ class Game:
         for val in possible_plays:
             # Adding a booster to board, not to overall game
             new_board.add_booster(loc, val)
-            new_first, new_second, _ = win_probabilities(
+            new_first, new_second, new_landings = win_probabilities(
                 tuple(self.dice), new_board.to_tuple()
             )
             first_delta = new_first - first
@@ -185,7 +185,8 @@ class Game:
                 bet_value(amount, first_delta[color], second_delta[color])
                 for color, amount in self.players[me_id].bets
             ]
-            ev.append(np.sum(change_ev))
+            # Account for increase in number of landings as well
+            ev.append(np.sum(change_ev) + new_landings[loc])
         return landing_val + max(ev), loc, possible_plays[np.argmax(ev)]
 
     def optimal_move(self, player_id: int):
@@ -219,7 +220,7 @@ class Game:
         options = [
             f"Bet {color_to_str(bet_color)}",
             f"Ally Player {self.players[ally_index].id}",
-            f"Boost location {booster_location}, {boost_type}",
+            f"Boost location {booster_location}, {color_to_str(boost_type)}",
             "Roll dice",
         ]
         indices = np.flip(np.argsort(vals))

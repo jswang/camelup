@@ -238,6 +238,9 @@ class Game:
             if color is None:
                 print(f"Invalid color: {move[1]}. Please try again.")
                 return None
+            if color not in WIN_CAMELS:
+                print(f"Invalid color: {color_to_str(color)}. Please try again.")
+                return None
             if len(self.available_bets[color]) == 0:
                 print(f"Invalid move: {move}. Please try again.")
                 return None
@@ -355,7 +358,7 @@ class Game:
             value = cmd[2]
             # Remove old booster
             if self.players[curr_player].boost is not None:
-                self.board.boosters[self.players[curr_player].boost[0]] = 0
+                self.board.boosters[self.players[curr_player].boost] = 0
             # Place new booster
             self.players[curr_player].boost = location
             self.board.boosters[location] = value

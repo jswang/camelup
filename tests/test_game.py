@@ -1,70 +1,72 @@
 import numpy as np
 from camelup.constants import *
-from camelup.game import Game
+from camelup.game import Game, get_rounds
 from camelup.board import get_winners
+import timeit
+import pytest
 
 
-def test_check_user_input_easy():
+@pytest.fixture
+def game():
+    return Game(4)
+
+
+def test_check_user_input_easy(game):
     # easy ones
-    g = Game(4)
-    assert g.check_user_input(0, "") is None
-    assert g.check_user_input(0, "blahblah") is None
-    assert g.check_user_input(0, "optimal") == "optimal"
-    assert g.check_user_input(0, "optimal 2") == "optimal"
-    assert g.check_user_input(0, "winner") == "winner"
-    assert g.check_user_input(0, "winner 2") == "winner"
-    assert g.check_user_input(0, "loser") == "loser"
-    assert g.check_user_input(0, "loser 2") == "loser"
-    assert g.check_user_input(0, "print") == "print"
-    assert g.check_user_input(0, "print 2") == "print"
+    assert game.check_user_input(0, "") is None
+    assert game.check_user_input(0, "blahblah") is None
+    assert game.check_user_input(0, "optimal") == "optimal"
+    assert game.check_user_input(0, "optimal 2") == "optimal"
+    assert game.check_user_input(0, "winner") == "winner"
+    assert game.check_user_input(0, "winner 2") == "winner"
+    assert game.check_user_input(0, "loser") == "loser"
+    assert game.check_user_input(0, "loser 2") == "loser"
+    assert game.check_user_input(0, "print") == "print"
+    assert game.check_user_input(0, "print 2") == "print"
 
 
-def test_check_user_input_betting():
+def test_check_user_input_betting(game):
     # Betting
-    g = Game(4)
-    assert g.check_user_input(0, "bet red") == ("bet", RED)
-    assert g.check_user_input(0, "bet red 3") == ("bet", RED)
-    assert g.check_user_input(0, "bet redd") is None
-    g.available_bets[RED] = []
-    assert g.check_user_input(0, "bet red") is None
+    assert game.check_user_input(0, "bet red") == ("bet", RED)
+    assert game.check_user_input(0, "bet red 3") == ("bet", RED)
+    assert game.check_user_input(0, "bet redd") is None
+    game.available_bets[RED] = []
+    assert game.check_user_input(0, "bet red") is None
 
 
-def test_check_user_input_ally():
+def test_check_user_input_ally(game):
     # Allying
-    g = Game(4)
-    assert g.check_user_input(0, "ally 2") == ("ally", 2)
-    assert g.check_user_input(0, "ally 2 lsdf") == ("ally", 2)
-    assert g.check_user_input(0, "ally") is None
-    assert g.check_user_input(0, "ally 4") is None
-    g.players[0].ally = 1
-    assert g.check_user_input(0, "ally 1") is None
-    assert g.check_user_input(1, "ally 0") is None
-    assert g.check_user_input(0, "ally 0") is None
+    assert game.check_user_input(0, "ally 2") == ("ally", 2)
+    assert game.check_user_input(0, "ally 2 lsdf") == ("ally", 2)
+    assert game.check_user_input(0, "ally") is None
+    assert game.check_user_input(0, "ally 4") is None
+    game.players[0].ally = 1
+    assert game.check_user_input(0, "ally 1") is None
+    assert game.check_user_input(1, "ally 0") is None
+    assert game.check_user_input(0, "ally 0") is None
 
 
-def test_check_user_input_boost():
+def test_check_user_input_boost(game):
     # Boosting
-    g = Game(4)
-    assert g.check_user_input(0, "boost 2 1") == ("boost", 2, 1)
-    assert g.check_user_input(0, "boost 2 1 blah") == ("boost", 2, 1)
-    assert g.check_user_input(0, "boost 2 -1") == ("boost", 2, -1)
-    assert g.check_user_input(0, "boost x -1") is None
-    assert g.check_user_input(0, "boost 2 x") is None
-    assert g.check_user_input(0, "boost 16 1") is None
-    assert g.check_user_input(0, "boost -1 1") is None
-    assert g.check_user_input(0, "boost 15 2") is None
+    assert game.check_user_input(0, "boost 2 1") == ("boost", 2, 1)
+    assert game.check_user_input(0, "boost 2 1 blah") == ("boost", 2, 1)
+    assert game.check_user_input(0, "boost 2 -1") == ("boost", 2, -1)
+    assert game.check_user_input(0, "boost x -1") is None
+    assert game.check_user_input(0, "boost 2 x") is None
+    assert game.check_user_input(0, "boost 16 1") is None
+    assert game.check_user_input(0, "boost -1 1") is None
+    assert game.check_user_input(0, "boost 15 2") is None
 
 
-def test_roll():
+def test_roll(game):
     # Rolling
-    g = Game(4)
-    assert g.check_user_input(0, "roll") is None
-    assert g.check_user_input(0, "roll red 1") == ("roll", RED, 1)
-    assert g.check_user_input(0, "roll purple 3") == ("roll", PURPLE, 3)
-    assert g.check_user_input(0, "roll red 4") is None
-    assert g.check_user_input(0, "roll asldkjf 1") is None
-    g.dice = [RED, YELLOW, BLUE, GREEN]
-    assert g.check_user_input(0, "roll purple 1") is None
+    assert game.check_user_input(0, "roll") is None
+    assert game.check_user_input(0, "roll red 1") == ("roll", RED, 1)
+    assert game.check_user_input(0, "roll purple 3") == ("roll", PURPLE, 3)
+    assert game.check_user_input(0, "roll red 4") is None
+    assert game.check_user_input(0, "roll asldkjf 1") is None
+    game.dice = [RED, YELLOW, BLUE, GREEN]
+    assert game.check_user_input(0, "roll purple 1") is None
 
 
 def test_optimal_move():
@@ -73,6 +75,7 @@ def test_optimal_move():
         4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14}
     )
     g.optimal_move(g.players[0].id)
+    # TODO add an assert
 
 
 def test_parse_move():
@@ -166,3 +169,8 @@ def test_conclude_round():
     print(get_winners(g.board.tiles))
     assert g.players[0].points == 7
     assert g.players[1].points == 10
+
+
+# def test_get_rounds():
+#     x = timeit.timeit(lambda: get_rounds(tuple(DICE)), number=1000)
+#     print(x)

@@ -1,19 +1,16 @@
 import numpy as np
 import copy
 from tqdm import tqdm
-import random
 import itertools
+from functools import cache
 
 from camelup.constants import *
 from camelup.board import Board, Player
 
-dice_cache = {}
 
-
-def get_rounds(dice: list) -> list:
+@cache
+def get_rounds(dice: tuple) -> list:
     """Initialize all possible permutations of colors + dice rolls for a round"""
-    if tuple(dice) in dice_cache:
-        return dice_cache[tuple(dice)]
     rounds = []
     n_dice = len(dice)
     for color in itertools.permutations(dice, n_dice - 1):
@@ -31,7 +28,6 @@ def get_rounds(dice: list) -> list:
                 rounds.extend([res1, res2])
             else:
                 rounds.append([(color[i], rolls[i]) for i in range(n_dice - 1)])
-    dice_cache[tuple(dice)] = rounds
     return rounds
 
 
@@ -178,7 +174,7 @@ class Game:
         second_place = np.zeros(N_CAMELS, dtype=int)
         total_landings = np.zeros(N_TILES, dtype=int)
         tile_cache = {}
-        rounds = get_rounds(self.dice)
+        rounds = get_rounds(tuple(self.dice))
         for round in tqdm(rounds):
             winners, _tiles, landings = board.simulate_round(round, tile_cache)
             first_place[winners[0]] += 1

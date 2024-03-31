@@ -16,7 +16,6 @@ def get_camels(tile):
     return np.copy(tile[0:x])
 
 
-
 def get_location(tiles, color):
     """Returns location of this color in tiles, None if not found"""
     rows, cols = np.where(tiles == color)
@@ -187,11 +186,11 @@ class Board:
                 # End round right away if someone won
                 if game_over:
                     winners = get_winners(tiles)
-                    return winners, tiles, landings
+                    return winners, tiles, landings, True
 
                 # Update cache if this could be useful in the future
                 if i != len(round) - 1:
                     tile_cache[index] = (np.copy(tiles), np.copy(landings))
 
         winners = get_winners(tiles)
-        return winners, tiles, landings
+        return winners, tiles, landings, False

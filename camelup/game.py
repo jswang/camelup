@@ -50,6 +50,8 @@ class Game:
         self.loser_bets = []
         # Available
         self.available_bets = {color: [2, 2, 3, 5] for color in WIN_CAMELS}
+        # game over
+        self.game_over = False
 
     def bet(self, player_id: int, color: int):
         """Place a bet on a color"""
@@ -162,7 +164,7 @@ class Game:
         tile_cache = {}
         rounds = get_rounds(tuple(self.dice))
         for round in tqdm(rounds):
-            winners, _tiles, landings = board.simulate_round(round, tile_cache)
+            winners, _tiles, landings, _ = board.simulate_round(round, tile_cache)
             first_place[winners[0]] += 1
             second_place[winners[1]] += 1
             total_landings += landings
@@ -239,6 +241,9 @@ class Game:
             if len(self.available_bets[color]) == 0:
                 print(f"Invalid move: {move}. Please try again.")
                 return None
+            print(
+                f"Player {curr_player} bet on {color_to_str(color)} with value {self.available_bets[color][-1]}"
+            )
             return ("bet", color)
 
         # ally <player_id>
@@ -262,6 +267,7 @@ class Game:
             if curr_player == player_id:
                 print(f"Player {curr_player} cannot ally with themselves")
                 return None
+            print(f"Player {curr_player} allied Player {player_id}")
             return ("ally", player_id)
 
         # boost <location> <1/-1>
@@ -279,6 +285,9 @@ class Game:
                     f"Invalid location: {location} and value: {value}. Please try again."
                 )
                 return None
+            print(
+                f"Player {curr_player} placed booster at {location} with value {value}"
+            )
             return ("boost", location, value)
 
         # roll <color> <amount>
@@ -299,7 +308,7 @@ class Game:
                 if amount < 1 or amount > 3:
                     print(f"Invalid roll amount: {amount}. Please try again.")
                     return None
-
+            print(f"Player {curr_player} rolled {color_to_str(color)} {amount}")
             return ("roll", color, amount)
 
         # winner
@@ -315,7 +324,7 @@ class Game:
             return None
 
     def parse_move(self, curr_player: int, move: list) -> bool:
-        """Parse move from player. Return True if move actually was made. print and optimal don't do anything"""
+        """Parse move from player. Return 0 if no valid move was made, 1 otherwise"""
         cmd = self.check_user_input(curr_player, move)
         if cmd is None:
             return False
@@ -333,16 +342,12 @@ class Game:
         elif cmd[0] == "bet":
             color = cmd[1]
             self.bet(curr_player, color)
-            print(
-                f"Player {curr_player} bet on {color_to_str(color)} for {self.players[curr_player].bets[-1][1]}"
-            )
 
         # ally <player_id>
         elif cmd[0] == "ally":
             player_id = cmd[1]
             self.players[curr_player].ally = player_id
             self.players[player_id].ally = curr_player
-            print(f"Player {curr_player} allied Player {player_id}")
 
         # boost <location> <1/-1>
         elif cmd[0] == "boost":
@@ -354,16 +359,16 @@ class Game:
             # Place new booster
             self.players[curr_player].boost = location
             self.board.boosters[location] = value
-            print(
-                f"Player {curr_player} placed booster at {location} with value {value}"
-            )
+
         # roll <color> <amount>
         elif cmd[0] == "roll":
             color = cmd[1]
             amount = cmd[2]
             # Update board
             self.players[curr_player].points += 1
-            winners, tiles, landings = self.board.simulate_round([(color, amount)], {})
+            winners, tiles, landings, game_over = self.board.simulate_round(
+                [(color, amount)], {}
+            )
             self.board.tiles = tiles
             if color == BLACK or color == WHITE:
                 color = GREY
@@ -376,7 +381,9 @@ class Game:
             if len(self.dice) == 1:
                 print(f"Concluding round")
                 self.conclude_round(winners)
-            print(f"Player {curr_player} rolled {color_to_str(color)} {amount}")
+            if game_over:
+                self.game_over = True
+                print("Game over")
         # winner
         elif cmd[0] == "winner":
             self.winner_bets.append(curr_player)
@@ -388,4 +395,5 @@ class Game:
         else:
             print(f"Invalid move: {move}. Please try again.")
             return False
+
         return True

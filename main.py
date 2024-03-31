@@ -21,7 +21,7 @@ def main():
     g = Game(args.n_players, setup=args.setup)
     print(g)
     curr_player = 0
-    while True:
+    while not g.game_over:
         if curr_player == args.id:
             s = "your"
         else:
@@ -29,6 +29,7 @@ def main():
         # Advance to next player if this player made a move
         if g.parse_move(curr_player, move=input(f"Enter {s} move: ")):
             curr_player = (curr_player + 1) % args.n_players
+    # TODO give overall winner
 
 
 if __name__ == "__main__":

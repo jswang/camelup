@@ -35,7 +35,7 @@ def test_winning_with_booster():
             "pos_boosters": np.array([15]),
         }
     )
-    winners, tiles, landings = b.simulate_round([(BLACK, 1)], {})
+    winners, tiles, landings, _ = b.simulate_round([(BLACK, 1)], {})
 
     assert np.all(
         tiles
@@ -82,7 +82,7 @@ def test_hopping_under():
             "neg_boosters": np.array([1]),
         }
     )
-    winners, tiles, landings = b.simulate_round([(RED, 1)], {})
+    winners, tiles, landings, _ = b.simulate_round([(RED, 1)], {})
     assert np.all(
         tiles
         == np.array(

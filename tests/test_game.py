@@ -1,8 +1,7 @@
 import numpy as np
 from camelup.constants import *
-from camelup.game import Game, get_rounds
+from camelup.game import Game, get_rounds, bet_value
 from camelup.board import get_winners
-import timeit
 import pytest
 
 
@@ -72,8 +71,9 @@ def test_roll(game):
 def test_optimal_move():
     # Optimal move
     g = Game(
-        4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14}
+        4, setup={RED: 0, YELLOW: 0, PURPLE: 1, BLUE: 2, GREEN: 2, WHITE: 13, BLACK: 14}
     )
+    g.dice = [GREEN]
     g.optimal_move(g.players[0].id)
     # TODO add an assert
 
@@ -171,6 +171,57 @@ def test_conclude_round():
     assert g.players[1].points == 10
 
 
-# def test_get_rounds():
-#     x = timeit.timeit(lambda: get_rounds(tuple(DICE)), number=1000)
-#     print(x)
+def test_get_rounds():
+    assert get_rounds((RED, GREY)) == [
+        [(RED, 1)],
+        [(RED, 2)],
+        [(RED, 3)],
+        [(BLACK, 1)],
+        [(WHITE, 1)],
+        [(BLACK, 2)],
+        [(WHITE, 2)],
+        [(BLACK, 3)],
+        [(WHITE, 3)],
+    ]
+    assert len(get_rounds((RED, GREEN, BLUE))) == 54
+
+
+def test_bet_value():
+    assert bet_value(5, 0.3, 0.2) == pytest.approx(5 * 0.3 + 0.2 - 0.5)
+    assert bet_value(1, 0.3, 0.2) == pytest.approx(0.3 + 0.2 - 0.5)
+
+
+def test_bet(game):
+    assert game.bet(0, RED)
+    assert game.players[0].bets == [(RED, 5)]
+    assert game.available_bets[RED] == [2, 2, 3]
+    assert game.bet(0, RED)
+    assert game.players[0].bets == [(RED, 5), (RED, 3)]
+    assert game.available_bets[RED] == [2, 2]
+    assert game.bet(0, RED)
+    assert game.players[0].bets == [(RED, 5), (RED, 3), (RED, 2)]
+    assert game.available_bets[RED] == [2]
+    assert game.bet(0, RED)
+    assert game.players[0].bets == [(RED, 5), (RED, 3), (RED, 2), (RED, 2)]
+    assert game.available_bets[RED] == []
+    assert not game.bet(0, RED)
+
+
+def test_best_ally(game):
+    game.bet(2, RED)
+    game.bet(3, YELLOW)
+    assert game.best_ally(0, [1, 0, 0, 0, 0], [0, 0, 0, 0, 0]) == (5, 2)
+    assert game.best_ally(0, [0, 1, 0, 0, 0], [0, 0, 0, 0, 0]) == (5, 3)
+    game.bet(1, RED)
+    game.players[2].ally = 3
+    game.players[3].ally = 2
+    # Since 2/3 taken up, best ally is 1 for 3 points
+    assert game.best_ally(0, [1, 0, 0, 0, 0], [0, 0, 0, 0, 0]) == (3, 1)
+
+
+def test_best_available_bet(game):
+    first = [0.4, 0.5, 0.2, 0.1, 0]
+    second = [0.4, 0.5, 0.2, 0.1, 0]
+    assert game.best_available_bet(first, second) == (3, 1)
+    game.available_bets[1] = [2, 2]
+    assert game.best_available_bet(first, second) == (pytest.approx(2.2), 0)

@@ -31,6 +31,11 @@ def get_rounds(dice: tuple) -> list:
     return rounds
 
 
+def bet_value(amount: int, first_prob: float, second_prob: float):
+    """Given first and second place probabilities, return expected value of a bet amount"""
+    return first_prob * amount + second_prob + (1 - first_prob - second_prob) * (-1)
+
+
 class Game:
     def __init__(self, n_players: int, setup=None) -> None:
         # Other players
@@ -44,48 +49,43 @@ class Game:
         # bets on who will lose overall
         self.loser_bets = []
         # Available
-        self.available_bets = {}
-        for color in WIN_CAMELS:
-            self.available_bets[color] = [2, 2, 3, 5]
+        self.available_bets = {color: [2, 2, 3, 5] for color in WIN_CAMELS}
 
-    def player_expected_values(self, first, second):
-        """Based on player bets, calculate the expected value of each player's _best_ bet"""
-        ev = np.zeros(len(self.players))
+    def bet(self, player_id: int, color: int):
+        """Place a bet on a color"""
+        if len(self.available_bets[color]) == 0:
+            return False
+        self.players[player_id].bets.append((color, self.available_bets[color].pop()))
+        return True
+
+    def best_ally(self, me_id: int, first: list, second: list):
+        """Get the best ally for player_id, return value and index of ally"""
+        ally_val = np.zeros(len(self.players), dtype=int)
         for i, player in enumerate(self.players):
-            for color, amount in player.bets:
-                new_ev = (
-                    first[color] * amount
-                    + second[color]
-                    + (1 - first[color] - second[color]) * (-1)
-                )
-                if new_ev > ev[i]:
-                    ev[i] = new_ev
-        return ev
+            if player.id != me_id and player.ally is None and len(player.bets) > 0:
+                player_bet_vals = [
+                    bet_value(amount, first[color], second[color])
+                    for color, amount in player.bets
+                ]
+                ally_val[i] = max(player_bet_vals)
+
+        ally_val, ally_index = np.max(ally_val), np.argmax(ally_val)
+
+        return ally_val, ally_index
 
     def best_available_bet(self, first: np.ndarray, second: np.ndarray) -> tuple:
         """Given the prob of coming in first or second, return the expected value of best bet and associated color"""
-        max_val = None
-        max_color = None
         vals = []
         colors = []
         for color, bets in self.available_bets.items():
             if bets:
-                new_val = (
-                    first[color] * bets[-1]
-                    + second[color]
-                    + (1 - first[color] - second[color]) * (-1)
-                )
+                new_val = bet_value(bets[-1], first[color], second[color])
                 vals.append(new_val)
                 colors.append(color)
-                if not max_val:
-                    max_val = new_val
-                    max_color = color
-                elif new_val > max_val:
-                    max_val = new_val
-                    max_color = color
-        return max_val, max_color
+        i = np.argmax(vals)
+        return vals[i], colors[i]
 
-    def best_booster_bet(self, me, first, second, landings):
+    def best_booster_bet(self, me_id: int, first: list, second: list, landings: list):
         """
         Of the available booster locations, find the one that maximizes payout: x
         Then, calculate the max change in the value of your existing bets: y
@@ -109,20 +109,16 @@ class Game:
             new_first, new_second, _ = self.win_probabilities(new_board)
             first_delta = new_first - first
             second_delta = new_second - second
-            last_delta = (1 - new_first - new_second) - (1 - first - second)
-            change_ev = np.zeros(N_CAMELS)
-            for color, amount in me.bets:
-                change_ev[color] = (
-                    first_delta[color] * amount
-                    + second_delta[color]
-                    + last_delta[color] * (-1)
-                )
+            change_ev = [
+                bet_value(amount, first_delta[color], second_delta[color])
+                for color, amount in self.players[me_id].bets
+            ]
             ev.append(np.sum(change_ev))
         return landing_val + max(ev), loc, possible_plays[np.argmax(ev)]
 
     def optimal_move(self, player_id: int):
         """
-        Get the optimal move for a player
+        Get the optimal move for player_id
         Moves available:
         1. Choose available bet
         2. Choose ally
@@ -139,21 +135,11 @@ class Game:
         bet_val, bet_color = self.best_available_bet(first_place, second_place)
 
         # 2. Choose ally, if possible
-        player_ev = self.player_expected_values(first_place, second_place)
-        for i, player in enumerate(self.players):
-            if player.id == player_id:
-                player_ev[i] = -np.inf
-                me = player
-            if player.ally is not None:
-                player_ev[i] = -np.inf
-        ally_val, ally_index = np.max(player_ev), np.argmax(player_ev)
-        if ally_val == -np.inf:
-            ally_index = None
-            ally_val = 0
+        ally_val, ally_index = self.best_ally(player_id, first_place, second_place)
 
         # 3. Place tile
         booster_val, booster_location, boost_type = self.best_booster_bet(
-            me, first_place, second_place, landings
+            player_id, first_place, second_place, landings
         )
         vals = [bet_val, ally_val, booster_val, 1]
         options = [
@@ -189,9 +175,7 @@ class Game:
     def reset_round(self):
         """Reset a round"""
         self.dice = DICE.copy()
-        self.available_bets = {}
-        for color in WIN_CAMELS:
-            self.available_bets[color] = [2, 2, 3, 5]
+        self.available_bets = {color: [2, 2, 3, 5] for color in WIN_CAMELS}
 
     def conclude_round(self, winners):
         """Distribute winnings and reset"""
@@ -348,10 +332,10 @@ class Game:
         # bet <color>
         elif cmd[0] == "bet":
             color = cmd[1]
-            amount = self.available_bets[color][-1]
-            self.players[curr_player].bets.append((color, amount))
-            self.available_bets[color].pop()
-            print(f"Player {curr_player} bet on {color_to_str(color)} for {amount}")
+            self.bet(curr_player, color)
+            print(
+                f"Player {curr_player} bet on {color_to_str(color)} for {self.players[curr_player].bets[-1][1]}"
+            )
 
         # ally <player_id>
         elif cmd[0] == "ally":

@@ -29,7 +29,7 @@ You also have the option of loading an existing game state, which is automatical
 - `optimal`: Run calculation for optimal move
 - `bet {red, yellow, green, blue, purple}`: Bet on a camel to win, will take highest available bet
 - `ally <player_id>`: Ally with another player
-- `boost <location> <1/-1>`: Boost a location with a +1 or a -1
+- `boost <location> <+/->`: Boost a location with a +1 or a -1
 - `roll {red, yellow, green, blue, purple} {1,2,3}`: Record a roll of the die
 - `winner`: Record an overall winner
 - `loser`: Record an overall loser
@@ -100,3 +100,8 @@ So, to save on calculation time, I added caching and used numpy arrays. These tw
 
 ### TODO's
 - Take overall winner/loser into acount
+
+3/31
+- 71669.15it/s
+- 68330.08it/s
+- 67698.47it/s

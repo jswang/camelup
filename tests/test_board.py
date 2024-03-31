@@ -1,6 +1,6 @@
 import numpy as np
 from camelup.constants import *
-from camelup.board import Board
+from camelup.board import Board, simulate_round
 from camelup.player import Player
 
 
@@ -21,8 +21,8 @@ def test_equal_board():
             WHITE: 2,
             BLUE: 0,
             GREEN: 0,
-            "pos_boosters": np.array([1]),
-            "neg_boosters": np.array([7]),
+            BOOST_POS: [1],
+            BOOST_NEG: [7],
         }
     )
     b2 = Board(
@@ -34,8 +34,8 @@ def test_equal_board():
             WHITE: 2,
             BLUE: 0,
             GREEN: 0,
-            "pos_boosters": np.array([1]),
-            "neg_boosters": np.array([7]),
+            BOOST_POS: [1],
+            BOOST_NEG: [7],
         }
     )
     assert b == b2
@@ -52,8 +52,8 @@ def test_booster_locations():
             WHITE: 10,
             BLUE: 11,
             GREEN: 11,
-            "pos_boosters": np.array([15]),
-            "neg_boosters": np.array([5]),
+            BOOST_POS: [15],
+            BOOST_NEG: [5],
         }
     )
     assert b.available_booster_locations() == [1, 3, 7, 8, 9, 12, 13]
@@ -70,41 +70,36 @@ def test_winning_with_booster():
             WHITE: 2,
             BLUE: 2,
             GREEN: 2,
-            "pos_boosters": np.array([15]),
+            BOOST_POS: [15],
         }
     )
-    winners, tiles, landings, _ = b.simulate_round([(BLACK, 1)], {})
+    winners, tiles, landings, _ = simulate_round(b.tiles, [(BLACK, 1)])
 
-    assert np.all(
-        tiles
-        == np.array(
-            [
-                [-1, -1, -1, -1, -1, -1, -1],
-                [4, -1, -1, -1, -1, -1, -1],
-                [5, 2, 3, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [6, 0, 1, -1, -1, -1, -1],
-            ]
-        )
-    )
-    assert np.all(winners == np.array([1, 0, 3, 2, 4]))
-    assert np.all(
-        landings == np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3])
-    )
+    assert tiles == {
+        0: [],
+        1: [4],
+        2: [5, 2, 3],
+        3: [],
+        4: [],
+        5: [],
+        6: [],
+        7: [],
+        8: [],
+        9: [],
+        10: [],
+        11: [],
+        12: [],
+        13: [],
+        14: [],
+        15: [8],
+        16: [6, 0, 1],
+    }
+
+    assert winners == [1, 0, 3, 2, 4]
+    assert landings == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3]
 
 
+# TODO test all edge cases here
 def test_hopping_under():
     # Hopping under
     b = Board(
@@ -116,35 +111,28 @@ def test_hopping_under():
             BLUE: 2,
             GREEN: 2,
             BLACK: 5,
-            "pos_boosters": np.array([15]),
-            "neg_boosters": np.array([1]),
+            BOOST_POS: [15],
+            BOOST_NEG: [1],
         }
     )
-    winners, tiles, landings, _ = b.simulate_round([(RED, 1)], {})
-    assert np.all(
-        tiles
-        == np.array(
-            [
-                [0, 4, 1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [5, 2, 3, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [6, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-                [-1, -1, -1, -1, -1, -1, -1],
-            ]
-        )
-    )
-    assert np.all(winners == np.array([3, 2, 1, 4, 0]))
-    assert np.all(
-        landings == np.array([0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    )
+    winners, tiles, landings, _ = simulate_round(b.tiles, [(RED, 1)])
+    assert tiles == {
+        0: [0, 4, 1],
+        1: [9],
+        2: [5, 2, 3],
+        3: [],
+        4: [],
+        5: [6],
+        6: [],
+        7: [],
+        8: [],
+        9: [],
+        10: [],
+        11: [],
+        12: [],
+        13: [],
+        14: [],
+        15: [8],
+    }
+    assert winners == [3, 2, 1, 4, 0]
+    assert landings == [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

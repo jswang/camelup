@@ -16,17 +16,7 @@ def main():
 
     print("Camel Up!!!\n")
     # TODO make inputting setup easier
-    setup = {
-        YELLOW: 0,
-        PURPLE: 0,
-        GREEN: 0,
-        RED: 1,
-        BLUE: 2,
-        BLACK: 13,
-        WHITE: 13,
-        "pos_boosters": [],
-        "neg_boosters": [],
-    }
+    setup = {YELLOW: 0, PURPLE: 0, GREEN: 0, RED: 1, BLUE: 2, BLACK: 13, WHITE: 13}
 
     # If specified, load game from save file
     if args.save_file:
@@ -37,7 +27,7 @@ def main():
     else:
         save_file = "current_game.json"
         g = Game(args.n_players, setup)
-
+    curr_player = 0
     while not g.game_over:
         if curr_player == args.id:
             s = "your"

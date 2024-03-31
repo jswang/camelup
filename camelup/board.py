@@ -2,90 +2,125 @@ from camelup.constants import *
 import numpy as np
 
 
-def get_num_camels(tile):
-    """Return number of camels on a tile"""
-    z = np.where(tile != EMPTY)[0]
-    if len(z) == 0:
-        return 0
-    return len(z)
-
-
-def get_camels(tile):
-    """Get all camels on this tile"""
-    x = get_num_camels(tile)
-    return np.copy(tile[0:x])
-
-
-def get_location(tiles, color):
-    """Returns location of this color in tiles, None if not found"""
-    rows, cols = np.where(tiles == color)
-    if len(rows) == len(cols) and len(rows) == 1:
-        return rows[0], cols[0]
+def get_location(tiles, thing):
+    """Returns (tile, stack) location of this thing, None if not found"""
+    for i, l in tiles.items():
+        if thing in l:
+            return i, l.index(thing)
     return None, None
+
+
+def has_toppers(tiles, color):
+    """Does this color exist on the board and have camels on top of it?"""
+    tile, stack = get_location(tiles, color)
+    has_topper = False
+    if tile is not None:
+        has_topper = len(tiles[tile][stack:]) > 0
+    return has_topper
 
 
 def get_winners(tiles):
     """Returns ordering of camels on board from winner to loser, ignore WHITE and BLACK"""
-    res = tiles.flatten()
-    res = res[np.logical_and(np.logical_and(res != WHITE, res != BLACK), res != EMPTY)]
-    return np.flip(res)
+    res = []
+    for l in tiles.values():
+        res.extend(l)
+    res.reverse()
+    for x in [WHITE, BLACK, BOOST_POS, BOOST_NEG]:
+        if x in res:
+            res.remove(x)
+    return res
 
 
 class Board:
     def __init__(self, setup: dict = None):
         # List of camels on each tile, -1 if no camel
-        self.tiles = np.ones((N_TILES, N_CAMELS), dtype=int) * EMPTY
-        # Booster index, 0 if no booster
-        self.boosters = np.zeros(N_TILES, dtype=int)
+        self.tiles = {i: [] for i in range(N_TILES)}
         # Init board with a setup
-        self.parse_setup(setup)
+        if setup is not None:
+            self.parse_setup(setup)
 
     def __repr__(self) -> str:
-        res = ""
-        # Print out camels on each tile
-        for tile_index, t in enumerate(self.tiles):
-            for stack_index, c in enumerate(get_camels(t)):
-                res += f"{color_to_str(c)}: tile: {tile_index}, stack: {stack_index}\n"
-        # Booster locations
-        res += f"positive boosters: {np.where(self.boosters > 0)[0]}\n"
-        res += f"negative boosters: {np.where(self.boosters < 0)[0]}\n"
-        return res
+        tiles = self.tiles.copy()
+        for i, l in tiles.items():
+            tiles[i] = [color_to_str(x) for x in l]
+        return f"Board:\n{tiles}\n"
 
     def __eq__(self, other) -> bool:
-        return np.all(self.tiles == other.tiles) and np.all(
-            self.boosters == other.boosters
-        )
+        return np.all(self.tiles == other.tiles)
 
     def to_json(self):
-        return {"tiles": self.tiles.tolist(), "boosters": self.boosters.tolist()}
+        return {"tiles": self.tiles.tolist()}
+
+    def to_tuple(self):
+        x = []
+        for i, l in self.tiles.items():
+            x.append((i, tuple(l)))
+        return tuple(x)
+
+    @classmethod
+    def from_tuple(cls, data: tuple):
+        board = cls()
+        for i, l in data:
+            board.tiles[i] = list(l)
+        return board
 
     @classmethod
     def from_json(cls, data):
         board = cls()
         board.tiles = np.array(data["tiles"].copy())
-        board.boosters = np.array(data["boosters"].copy())
         return board
 
     def reset_round(self):
-        self.boosters = np.zeros(N_TILES, dtype=int)
+        # Remove boosters
+        for l in self.tiles.values():
+            try:
+                l.remove(BOOST_POS)
+            except ValueError:
+                pass
+            try:
+                l.remove(BOOST_NEG)
+            except ValueError:
+                pass
+
+    def booster_tiles(self):
+        """Get location of all boosters"""
+        res = []
+        for tile, l in self.tiles.items():
+            if BOOST_POS in l or BOOST_NEG in l:
+                res.append(tile)
+        return res
+
+    def remove_booster(self, location):
+        """Remove booster from location"""
+        if BOOST_POS in self.tiles[location]:
+            self.tiles[location].remove(BOOST_POS)
+        if BOOST_NEG in self.tiles[location]:
+            self.tiles[location].remove(BOOST_NEG)
+
+    def add_booster(self, location, booster):
+        """Add booster to location"""
+        self.tiles[location].append(booster)
 
     def parse_setup(self, setup):
         """Parse setup dictionary and set up board accordingly"""
-        if setup:
-            for color, tile in setup.items():
-                if color in CAMELS:
-                    self.tiles[tile][get_num_camels(self.tiles[tile])] = color
-                elif color == "pos_boosters":
-                    self.boosters[tile] = 1
-                elif color == "neg_boosters":
-                    self.boosters[tile] = -1
+        for thing, tile in setup.items():
+            if thing in CAMELS:
+                self.tiles[tile].append(thing)
+            if thing == BOOST_POS:
+                for t in tile:
+                    self.tiles[t].append(BOOST_POS)
+            if thing == BOOST_NEG:
+                for t in tile:
+                    self.tiles[t].append(BOOST_NEG)
 
     def available_booster_locations(self) -> list:
         """Return a list of available booster locations on the board"""
-        booster_indices = np.array(np.nonzero(self.boosters))[0]
-        locations = np.where(np.any(self.tiles != EMPTY, axis=1))[0]
+        booster_indices = np.array(self.booster_tiles())
+        occupied_indices = np.array(
+            [x for x in range(N_TILES) if len(self.tiles[x]) > 0]
+        )
         occupied = (
-            set(locations)
+            set(occupied_indices)
             | set(booster_indices)
             | set(booster_indices + 1)
             | set(booster_indices - 1)
@@ -93,105 +128,72 @@ class Board:
 
         return [x for x in range(N_TILES) if x not in occupied]
 
-    def simulate_round(self, round: list, tile_cache: dict):
-        """
-        Simulate moving the camels according to rounds, which is a list of 5 (color, spaces)
-        """
-        tiles = np.copy(self.tiles)
-        landings = np.zeros(N_TILES, dtype=int)
-        game_over = False
-        # For each die roll in round, figure out board state
-        for i in range(len(round)):
-            index = tuple(round[0 : i + 1])
-            if index in tile_cache:
-                tiles, landings = np.copy(tile_cache[index][0]), np.copy(
-                    tile_cache[index][1]
-                )
-            # Otherwise, simulate that round
+
+def simulate_round(tiles: dict, round: list):
+    """
+    Simulate moving the camels according to rounds, which is a list of (color, spaces)
+    """
+    landings = [0] * N_TILES
+    game_over = False
+    # Only persists for this particular tile state.
+    tile_cache = {}
+    # For each die roll in round, figure out board state
+    for i in range(len(round)):
+        index = tuple(round[0 : i + 1])
+        if index in tile_cache:
+            tiles, landings = tile_cache[index][0].copy(), tile_cache[index][1].copy()
+        # Otherwise, simulate that round
+        else:
+            color, spaces = round[i]
+            # If crazy camel rolled, and only one has toppers, move the one with toppers
+            if color in [BLACK, WHITE]:
+                black_top = has_toppers(tiles, BLACK)
+                white_top = has_toppers(tiles, WHITE)
+                # If only one has it, keep it
+                if black_top ^ white_top:
+                    color = BLACK if black_top else WHITE
+                spaces = -spaces
+
+            # Move the camel
+            my_tile, my_stack_index = get_location(tiles, color)
+
+            # New space without booster
+            new_tile = my_tile + spaces
+            on_top = True
+            # If you haven't finished game, check boosters
+            if new_tile < N_TILES:
+                new_tile %= N_TILES
+                if BOOST_NEG in tiles[new_tile]:
+                    on_top = False
+                    new_tile -= 1  # Intentionally no %, might win
+                elif BOOST_POS in tiles[new_tile]:
+                    new_tile += 1  # Intentionally no %, might win
+
+            # At this point, new_tile might be > N_TILES and it might be negative (which is ok)
+            # Did you win?
+            if new_tile >= N_TILES:
+                game_over = True
+                for i in range(N_TILES, new_tile + 1):
+                    tiles[i] = []
+            # Move to new tile
+            stack_to_move = tiles[my_tile][my_stack_index:].copy()
+            del tiles[my_tile][my_stack_index:]
+            if on_top:
+                tiles[new_tile].extend(stack_to_move)
             else:
-                color, spaces = round[i]
-                # If crazy camel rolled, and only one has toppers, move the one with toppers
-                if color in [BLACK, WHITE]:
-                    # who has toppers?
-                    black_tile, black_stack = get_location(tiles, BLACK)
-                    if black_tile is not None:
-                        black_top = (
-                            black_tile < N_CAMELS - 1
-                            and tiles[black_tile][black_stack + 1] != EMPTY
-                        )
-                    else:
-                        black_top = False
+                tiles[new_tile] = stack_to_move + tiles[new_tile]
 
-                    white_tile, white_stack = get_location(tiles, WHITE)
-                    if white_tile is not None:
-                        white_top = (
-                            white_tile < N_CAMELS - 1
-                            and tiles[white_tile][white_stack + 1] != EMPTY
-                        )
-                    else:
-                        white_top = False
+            # Keep track of landings before booster added
+            if my_tile + spaces < N_TILES:
+                landings[my_tile + spaces] += len(stack_to_move)
 
-                    if black_top and not white_top:
-                        color = BLACK
-                    if white_top and not black_top:
-                        color = WHITE
-                    spaces = -spaces
+            # End round right away if someone won
+            if game_over:
+                winners = get_winners(tiles)
+                return winners, tiles, landings, True
 
-                # Move the camel
-                my_tile, my_stack_index = get_location(tiles, color)
+            # Update cache
+            tile_cache[index] = (tiles.copy(), landings.copy())
 
-                # New space without booster
-                new_tile = my_tile + spaces
-                on_top = True
-                # If you haven't finished game, check boosters
-                if new_tile < N_TILES:
-                    new_tile %= N_TILES
-                    if self.boosters[new_tile] < 0:
-                        on_top = False
-                    # Intentionally no %, might win
-                    new_tile += self.boosters[new_tile]
-
-                # At this point, new_tile might be > N_TILES and it might be negative
-                # Did you win?
-                if new_tile >= N_TILES:
-                    game_over = True
-                    tiles = np.vstack(
-                        (
-                            tiles,
-                            np.ones((new_tile - N_TILES + 1, N_CAMELS), dtype=int)
-                            * EMPTY,
-                        )
-                    )
-
-                # Fix up tiles
-                stack_to_move = get_camels(tiles[my_tile][my_stack_index:])
-                tiles[my_tile][my_stack_index:] = EMPTY
-                if on_top:
-                    new_stack_index = get_num_camels(tiles[new_tile])
-                    # Move to new tile
-                    tiles[new_tile][
-                        new_stack_index : new_stack_index + len(stack_to_move)
-                    ] = stack_to_move
-                else:
-                    stack_to_keep = get_camels(tiles[new_tile])
-                    tiles[new_tile][0 : len(stack_to_move)] = stack_to_move
-                    tiles[new_tile][
-                        len(stack_to_move) : len(stack_to_move) + len(stack_to_keep)
-                    ] = stack_to_keep
-                    tiles[new_tile][len(stack_to_move) + len(stack_to_keep) :] = EMPTY
-
-                # Keep track of landings before booster added
-                if my_tile + spaces < N_TILES:
-                    landings[my_tile + spaces] += len(stack_to_move)
-
-                # End round right away if someone won
-                if game_over:
-                    winners = get_winners(tiles)
-                    return winners, tiles, landings, True
-
-                # Update cache if this could be useful in the future
-                if i != len(round) - 1:
-                    tile_cache[index] = (np.copy(tiles), np.copy(landings))
-
-        winners = get_winners(tiles)
-        return winners, tiles, landings, False
+    winners = get_winners(tiles)
+    return winners, tiles, landings, False

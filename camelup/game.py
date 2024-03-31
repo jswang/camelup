@@ -5,7 +5,7 @@ import itertools
 from functools import cache
 
 from camelup.constants import *
-from camelup.board import Board
+from camelup.board import Board, simulate_round
 from camelup.player import Player
 
 
@@ -30,6 +30,29 @@ def get_rounds(dice: tuple) -> list:
             else:
                 rounds.append([(color[i], rolls[i]) for i in range(n_dice - 1)])
     return rounds
+
+
+@cache
+def win_probabilities(dice: tuple, board: tuple):
+    """
+    Calculate the probability of each camel winning
+    """
+    first_place = np.zeros(N_CAMELS, dtype=int)
+    second_place = np.zeros(N_CAMELS, dtype=int)
+    total_landings = np.zeros(N_TILES, dtype=int)
+    rounds = get_rounds(dice)
+    for round in tqdm(rounds):
+        winners, _tiles, landings, _ = simulate_round(
+            Board.from_tuple(board).tiles, round
+        )
+        first_place[winners[0]] += 1
+        second_place[winners[1]] += 1
+        total_landings += landings
+    # Calculate probability of each camel winning
+    total = len(rounds)
+    fp = first_place / total
+    sp = second_place / total
+    return fp, sp, total_landings / total
 
 
 def bet_value(amount: int, first_prob: float, second_prob: float):
@@ -89,6 +112,14 @@ class Game:
         game.game_over = data["game_over"]
         return game
 
+    def add_booster(self, player_id: int, location: int, value: int):
+        """Add booster to location. value should be BOOST_POS or BOOST_NEG"""
+        assert value in [BOOST_POS, BOOST_NEG]
+        if self.players[player_id].boost is not None:
+            self.board.remove_booster(self.players[player_id].boost)
+        self.players[player_id].boost = location
+        self.board.add_booster(location, value)
+
     def bet(self, player_id: int, color: int):
         """Place a bet on a color"""
         if len(self.available_bets[color]) == 0:
@@ -141,10 +172,13 @@ class Game:
         # What change in bets would i receive?
         new_board = copy.deepcopy(self.board)
         ev = []
-        possible_plays = [1, -1]
+        possible_plays = [BOOST_POS, BOOST_NEG]
         for val in possible_plays:
-            new_board.boosters[loc] = val
-            new_first, new_second, _ = self.win_probabilities(new_board)
+            # Adding a booster to board, not to overall game
+            new_board.add_booster(loc, val)
+            new_first, new_second, _ = win_probabilities(
+                tuple(self.dice), new_board.to_tuple()
+            )
             first_delta = new_first - first
             second_delta = new_second - second
             change_ev = [
@@ -167,7 +201,9 @@ class Game:
         6. Bet on overall loser
         """
         print(f"Calculating optimal move")
-        first_place, second_place, landings = self.win_probabilities(self.board)
+        first_place, second_place, landings = win_probabilities(
+            tuple(self.dice), self.board.to_tuple()
+        )
 
         # 1. Choose available bet
         bet_val, bet_color = self.best_available_bet(first_place, second_place)
@@ -189,26 +225,6 @@ class Game:
         indices = np.flip(np.argsort(vals))
         for i in indices:
             print(f"{vals[i]:.2f}: {options[i]}")
-
-    def win_probabilities(self, board):
-        """
-        Calculate the probability of each camel winning
-        """
-        first_place = np.zeros(N_CAMELS, dtype=int)
-        second_place = np.zeros(N_CAMELS, dtype=int)
-        total_landings = np.zeros(N_TILES, dtype=int)
-        tile_cache = {}
-        rounds = get_rounds(tuple(self.dice))
-        for round in tqdm(rounds):
-            winners, _tiles, landings, _ = board.simulate_round(round, tile_cache)
-            first_place[winners[0]] += 1
-            second_place[winners[1]] += 1
-            total_landings += landings
-        # Calculate probability of each camel winning
-        total = len(rounds)
-        fp = first_place / total
-        sp = second_place / total
-        return fp, sp, total_landings / total
 
     def reset_round(self):
         """Reset a round"""
@@ -312,17 +328,17 @@ class Game:
             print(f"Player {curr_player} allied Player {player_id}")
             return ("ally", player_id)
 
-        # boost <location> <1/-1>
+        # boost <location> <+/->
         elif move[0] == "boost":
             try:
                 location = int(move[1])
-                value = int(move[2])
+                value = move[2]
             except:
                 print(
                     f"Invalid location: {move[1]} and value: {move[2]}. Please try again."
                 )
                 return None
-            if location < 0 or location >= N_TILES or value not in [-1, 1]:
+            if location < 0 or location >= N_TILES or value not in ["+", "-"]:
                 print(
                     f"Invalid location: {location} and value: {value}. Please try again."
                 )
@@ -330,6 +346,7 @@ class Game:
             print(
                 f"Player {curr_player} placed booster at {location} with value {value}"
             )
+            value = BOOST_POS if value == "+" else BOOST_NEG
             return ("boost", location, value)
 
         # roll <color> <amount>
@@ -406,16 +423,11 @@ class Game:
             self.players[curr_player].ally = player_id
             self.players[player_id].ally = curr_player
 
-        # boost <location> <1/-1>
+        # boost <location> <+/->
         elif cmd[0] == "boost":
             location = cmd[1]
             value = cmd[2]
-            # Remove old booster
-            if self.players[curr_player].boost is not None:
-                self.board.boosters[self.players[curr_player].boost] = 0
-            # Place new booster
-            self.players[curr_player].boost = location
-            self.board.boosters[location] = value
+            self.add_booster(curr_player, location, value)
 
         # roll <color> <amount>
         elif cmd[0] == "roll":
@@ -423,8 +435,8 @@ class Game:
             amount = cmd[2]
             # Update board
             self.players[curr_player].points += 1
-            winners, tiles, landings, game_over = self.board.simulate_round(
-                [(color, amount)], {}
+            winners, tiles, landings, game_over = simulate_round(
+                self.board.tiles, [(color, amount)]
             )
             self.board.tiles = tiles
             if color == BLACK or color == WHITE:

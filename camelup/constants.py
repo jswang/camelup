@@ -8,6 +8,9 @@ PURPLE = 4
 WHITE = 5
 BLACK = 6
 GREY = 7
+BOOST_POS = 8
+BOOST_NEG = 9
+
 
 N_TILES = 16
 CAMELS = [RED, YELLOW, BLUE, GREEN, PURPLE, WHITE, BLACK]
@@ -35,6 +38,10 @@ def str_to_color(value: str):
         return BLACK
     elif value == "grey":
         return GREY
+    elif value == "boost_pos":
+        return BOOST_POS
+    elif value == "boost_neg":
+        return BOOST_NEG
     return None
 
 
@@ -55,4 +62,8 @@ def color_to_str(value):
         return "black"
     elif value == GREY:
         return "grey"
+    elif value == BOOST_POS:
+        return "boost_pos"
+    elif value == BOOST_NEG:
+        return "boost_neg"
     return None

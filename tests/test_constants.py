@@ -15,6 +15,8 @@ def test_str_to_color():
     assert constants.str_to_color("white") == constants.WHITE
     assert constants.str_to_color("black") == constants.BLACK
     assert constants.str_to_color("grey") == constants.GREY
+    assert constants.str_to_color("boost_pos") == constants.BOOST_POS
+    assert constants.str_to_color("boost_neg") == constants.BOOST_NEG
     assert constants.str_to_color("LSDKJF") == None
 
 
@@ -27,4 +29,6 @@ def test_color_to_str():
     assert constants.color_to_str(constants.WHITE) == "white"
     assert constants.color_to_str(constants.BLACK) == "black"
     assert constants.color_to_str(constants.GREY) == "grey"
+    assert constants.color_to_str(constants.BOOST_POS) == "boost_pos"
+    assert constants.color_to_str(constants.BOOST_NEG) == "boost_neg"
     assert constants.color_to_str(23423) == None

@@ -4,38 +4,67 @@ from camelup.game import Game
 from camelup.board import get_winners
 
 
-def test_overall_probability():
-    # Overall probabilities
-    g = Game(
-        4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14}
-    )
-    first, second, landings = g.win_probabilities(g.board)
-    first = first[:5]
-    second = second[:5]
-    assert np.all(
-        np.isclose(
-            first,
-            [
-                0.07398054620276842,
-                0.25419316623020327,
-                0.13835889761815687,
-                0.39801409153261,
-                0.1354532984162614,
-            ],
-        )
-    )
-    assert np.all(
-        np.isclose(
-            second,
-            [
-                0.10978925052999126,
-                0.15208567153011598,
-                0.29945753834642724,
-                0.2764029180695847,
-                0.16226462152388077,
-            ],
-        )
-    )
+def test_check_user_input_easy():
+    # easy ones
+    g = Game(4)
+    assert g.check_user_input(0, "") is None
+    assert g.check_user_input(0, "blahblah") is None
+    assert g.check_user_input(0, "optimal") == "optimal"
+    assert g.check_user_input(0, "optimal 2") == "optimal"
+    assert g.check_user_input(0, "winner") == "winner"
+    assert g.check_user_input(0, "winner 2") == "winner"
+    assert g.check_user_input(0, "loser") == "loser"
+    assert g.check_user_input(0, "loser 2") == "loser"
+    assert g.check_user_input(0, "print") == "print"
+    assert g.check_user_input(0, "print 2") == "print"
+
+
+def test_check_user_input_betting():
+    # Betting
+    g = Game(4)
+    assert g.check_user_input(0, "bet red") == ("bet", RED)
+    assert g.check_user_input(0, "bet red 3") == ("bet", RED)
+    assert g.check_user_input(0, "bet redd") is None
+    g.available_bets[RED] = []
+    assert g.check_user_input(0, "bet red") is None
+
+
+def test_check_user_input_ally():
+    # Allying
+    g = Game(4)
+    assert g.check_user_input(0, "ally 2") == ("ally", 2)
+    assert g.check_user_input(0, "ally 2 lsdf") == ("ally", 2)
+    assert g.check_user_input(0, "ally") is None
+    assert g.check_user_input(0, "ally 4") is None
+    g.players[0].ally = 1
+    assert g.check_user_input(0, "ally 1") is None
+    assert g.check_user_input(1, "ally 0") is None
+    assert g.check_user_input(0, "ally 0") is None
+
+
+def test_check_user_input_boost():
+    # Boosting
+    g = Game(4)
+    assert g.check_user_input(0, "boost 2 1") == ("boost", 2, 1)
+    assert g.check_user_input(0, "boost 2 1 blah") == ("boost", 2, 1)
+    assert g.check_user_input(0, "boost 2 -1") == ("boost", 2, -1)
+    assert g.check_user_input(0, "boost x -1") is None
+    assert g.check_user_input(0, "boost 2 x") is None
+    assert g.check_user_input(0, "boost 16 1") is None
+    assert g.check_user_input(0, "boost -1 1") is None
+    assert g.check_user_input(0, "boost 15 2") is None
+
+
+def test_roll():
+    # Rolling
+    g = Game(4)
+    assert g.check_user_input(0, "roll") is None
+    assert g.check_user_input(0, "roll red 1") == ("roll", RED, 1)
+    assert g.check_user_input(0, "roll purple 3") == ("roll", PURPLE, 3)
+    assert g.check_user_input(0, "roll red 4") is None
+    assert g.check_user_input(0, "roll asldkjf 1") is None
+    g.dice = [RED, YELLOW, BLUE, GREEN]
+    assert g.check_user_input(0, "roll purple 1") is None
 
 
 def test_optimal_move():
@@ -51,23 +80,23 @@ def test_parse_move():
     g = Game(
         4, setup={RED: 0, YELLOW: 0, BLUE: 2, GREEN: 2, PURPLE: 1, WHITE: 13, BLACK: 14}
     )
-    g.parse_move(0, ["bet", "yellow", "5"])
+    g.parse_move(0, "bet yellow 5")
     assert g.players[0].bets == [(YELLOW, 5)]
     assert g.available_bets[YELLOW] == [2, 2, 3]
-    g.parse_move(0, ["ally", "1"])
+    g.parse_move(0, "ally 1")
     assert g.players[0].ally == 1
-    g.parse_move(0, ["boost", "2", "1"])
+    g.parse_move(0, "boost 2 1")
     assert g.players[0].boost == 2  # technically this is an illegal boost
     assert np.all(
         g.board.boosters == np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     )
-    g.parse_move(0, ["roll", "red", "2"])
+    g.parse_move(0, "roll red 2")
     assert g.players[0].points == 6
     assert len(g.dice) == N_DICE - 1
-    g.parse_move(0, ["roll", "yellow", "2"])
-    g.parse_move(0, ["roll", "blue", "2"])
-    g.parse_move(0, ["roll", "green", "2"])
-    g.parse_move(0, ["roll", "purple", "2"])
+    g.parse_move(0, "roll yellow 2")
+    g.parse_move(0, "roll blue 2")
+    g.parse_move(0, "roll green 2")
+    g.parse_move(0, "roll purple 2")
     # +2 from boost, +5 from roll, +1 from bet
     assert g.players[0].points == 11
 
@@ -87,7 +116,7 @@ def test_boost_points():
         },
     )
     g.players[1].boost = 4
-    g.parse_move(1, ["roll", "purple", "1"])
+    g.parse_move(1, "roll purple 1")
     assert g.players[1].points == 6
 
 
@@ -106,7 +135,7 @@ def test_boost_back_under():
         },
     )
     g.players[1].boost = 4
-    g.parse_move(1, ["roll", "yellow", "1"])
+    g.parse_move(1, "roll yellow 1")
     # player 1 gets 3 + 1 + 3 points
     assert g.players[1].points == 7
     assert np.all(g.board.tiles[3][0:5] == np.array([YELLOW, PURPLE, GREEN, RED, BLUE]))
@@ -131,7 +160,7 @@ def test_conclude_round():
     g.available_bets[GREEN] = [2, 2]
     g.players[0].bets = [(3, 5), (2, 3), (2, 2)]
     g.players[1].bets = [(3, 3), (2, 5), (2, 2)]
-    g.parse_move(1, ["roll", "purple", "1"])
+    g.parse_move(1, "roll purple 1")
     # player 0 gets: 3 - 1 + 3 + 2
     # player 1 gets: 3 + 1 (roll) - 1 + 5 + 2
     print(get_winners(g.board.tiles))

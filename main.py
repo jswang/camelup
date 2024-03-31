@@ -26,9 +26,8 @@ def main():
             s = "your"
         else:
             s = f"Player {curr_player}"
-        move = input(f"Enter {s} move: ").lower().strip().split(" ")
         # Advance to next player if this player made a move
-        if g.parse_move(curr_player, move):
+        if g.parse_move(curr_player, move=input(f"Enter {s} move: ")):
             curr_player = (curr_player + 1) % args.n_players
 
 

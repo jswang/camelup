@@ -238,32 +238,136 @@ class Game:
         res += f"Loser bets: {self.loser_bets}\n"
         return res
 
-    def parse_move(self, curr_player: int, move: str) -> bool:
-        """Parse move from player. Return True if move actually was made. print and optimal don't do anything"""
+    def check_user_input(self, curr_player: int, move: str) -> tuple:
+        """Check user input for formatting and validty. Return tuple of move or None if invalid"""
+        if len(move) == 0:
+            return None
+        move = move.lower().strip().split(" ")
+
         # optimal
         if move[0] == "optimal":
-            self.optimal_move(curr_player)
-            return False
+            return "optimal"
+
         # bet <color>
         elif move[0] == "bet":
+            if len(move) < 2:
+                return None
             color = str_to_color(move[1])
+            if color is None:
+                print(f"Invalid color: {move[1]}. Please try again.")
+                return None
             if len(self.available_bets[color]) == 0:
                 print(f"Invalid move: {move}. Please try again.")
-                return False
+                return None
+            return ("bet", color)
+
+        # ally <player_id>
+        elif move[0] == "ally":
+            if len(move) < 2:
+                return None
+            try:
+                player_id = int(move[1])
+            except:
+                print(f"Invalid player id: {move[1]}. Please try again.")
+                return None
+            if player_id not in [self.players[i].id for i in range(len(self.players))]:
+                print(f"Invalid player id: {player_id}. Please try again.")
+                return None
+            if self.players[player_id].ally is not None:
+                print(f"Player {player_id} already has an ally")
+                return None
+            if self.players[curr_player].ally is not None:
+                print(f"Player {curr_player} already has an ally")
+                return None
+            if curr_player == player_id:
+                print(f"Player {curr_player} cannot ally with themselves")
+                return None
+            return ("ally", player_id)
+
+        # boost <location> <1/-1>
+        elif move[0] == "boost":
+            try:
+                location = int(move[1])
+                value = int(move[2])
+            except:
+                print(
+                    f"Invalid location: {move[1]} and value: {move[2]}. Please try again."
+                )
+                return None
+            if location < 0 or location >= N_TILES or value not in [-1, 1]:
+                print(
+                    f"Invalid location: {location} and value: {value}. Please try again."
+                )
+                return None
+            return ("boost", location, value)
+
+        # roll <color> <amount>
+        elif move[0] == "roll":
+            if len(move) < 3:
+                print(f"Invalid move: {move}. Please try again.")
+                return None
+            else:
+                color = str_to_color(move[1])
+                if color is None or color not in self.dice:
+                    print(f"Unavailable color: {move[1]}. Please try again.")
+                    return None
+                try:
+                    amount = int(move[2])
+                except:
+                    print(f"Non integer roll amount: {move[2]}. Please try again.")
+                    return None
+                if amount < 1 or amount > 3:
+                    print(f"Invalid roll amount: {amount}. Please try again.")
+                    return None
+
+            return ("roll", color, amount)
+
+        # winner
+        elif move[0] == "winner":
+            return "winner"
+        # loser
+        elif move[0] == "loser":
+            return "loser"
+        # print
+        elif move[0] == "print":
+            return "print"
+        else:
+            return None
+
+    def parse_move(self, curr_player: int, move: list) -> bool:
+        """Parse move from player. Return True if move actually was made. print and optimal don't do anything"""
+        cmd = self.check_user_input(curr_player, move)
+        if cmd is None:
+            return False
+
+        # optimal
+        if cmd == "optimal":
+            self.optimal_move(curr_player)
+            return False
+        # print
+        elif cmd[0] == "print":
+            print(self)
+            return False
+
+        # bet <color>
+        elif cmd[0] == "bet":
+            color = cmd[1]
             amount = self.available_bets[color][-1]
             self.players[curr_player].bets.append((color, amount))
             self.available_bets[color].pop()
-            print(f"Player {curr_player} bet on {move[1]} for {amount}")
+            print(f"Player {curr_player} bet on {color_to_str(color)} for {amount}")
+
         # ally <player_id>
-        elif move[0] == "ally":
-            player_id = int(move[1])
+        elif cmd[0] == "ally":
+            player_id = cmd[1]
             self.players[curr_player].ally = player_id
             self.players[player_id].ally = curr_player
             print(f"Player {curr_player} allied Player {player_id}")
+
         # boost <location> <1/-1>
-        elif move[0] == "boost":
-            location = int(move[1])
-            value = int(move[2])
+        elif cmd[0] == "boost":
+            location = cmd[1]
+            value = cmd[2]
             # Remove old booster
             if self.players[curr_player].boost is not None:
                 self.board.boosters[self.players[curr_player].boost[0]] = 0
@@ -274,15 +378,9 @@ class Game:
                 f"Player {curr_player} placed booster at {location} with value {value}"
             )
         # roll <color> <amount>
-        elif move[0] == "roll":
-            # Fixed roll
-            if len(move) == 3:
-                color = str_to_color(move[1])
-                amount = int(move[2])
-            # Random roll
-            else:
-                color = random.choice(self.dice)
-                amount = random.randint(1, 3)
+        elif cmd[0] == "roll":
+            color = cmd[1]
+            amount = cmd[2]
             # Update board
             self.players[curr_player].points += 1
             winners, tiles, landings = self.board.simulate_round([(color, amount)], {})
@@ -300,17 +398,13 @@ class Game:
                 self.conclude_round(winners)
             print(f"Player {curr_player} rolled {color_to_str(color)} {amount}")
         # winner
-        elif move[0] == "winner":
+        elif cmd[0] == "winner":
             self.winner_bets.append(curr_player)
             print(f"Player {curr_player} bet on overall winner")
         # loser
-        elif move[0] == "loser":
+        elif cmd[0] == "loser":
             self.loser_bets.append(curr_player)
             print(f"Player {curr_player} bet on overall loser")
-        # print
-        elif move[0] == "print":
-            print(self)
-            return False
         else:
             print(f"Invalid move: {move}. Please try again.")
             return False

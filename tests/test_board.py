@@ -1,6 +1,7 @@
 import numpy as np
 from camelup.constants import *
-from camelup.board import Board, Player
+from camelup.board import Board
+from camelup.player import Player
 
 
 def test_equality_players():

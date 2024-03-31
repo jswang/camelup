@@ -5,7 +5,8 @@ import itertools
 from functools import cache
 
 from camelup.constants import *
-from camelup.board import Board, Player
+from camelup.board import Board
+from camelup.player import Player
 
 
 @cache

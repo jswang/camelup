@@ -17,3 +17,9 @@ def test_json():
         data = json.load(f)
         g2 = Game.from_json(data)
         assert g == g2
+
+
+def test_setup():
+    with open("default_setup.json", "r") as f:
+        data = json.load(f)
+        g = Game(setup=data)

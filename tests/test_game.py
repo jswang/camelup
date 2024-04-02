@@ -83,13 +83,13 @@ def test_roll(game):
 
 
 def test_optimal_move():
+    """Sanity check that this runs"""
     # Optimal move
     g = Game(
         4, setup={RED: 0, YELLOW: 0, PURPLE: 1, BLUE: 2, GREEN: 2, WHITE: 13, BLACK: 14}
     )
     g.dice = [GREEN]
     g.optimal_move(g.players[0].id)
-    # TODO add an assert
 
 
 def test_parse_move():

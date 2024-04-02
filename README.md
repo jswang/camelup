@@ -100,8 +100,3 @@ So, to save on calculation time, I added caching and used numpy arrays. These tw
 
 ### TODO's
 - Take overall winner/loser into acount
-
-3/31
-- 71669.15it/s
-- 68330.08it/s
-- 67698.47it/s

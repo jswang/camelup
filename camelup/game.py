@@ -61,7 +61,7 @@ def bet_value(amount: int, first_prob: float, second_prob: float):
 
 
 class Game:
-    def __init__(self, n_players: int, setup=None) -> None:
+    def __init__(self, n_players: int = 2, setup=None) -> None:
         # Other players
         self.players = [Player(i) for i in range(n_players)]
         # Board
@@ -77,7 +77,7 @@ class Game:
         # game over
         self.game_over = False
         # A turn has been taken this round
-        self.turn_taken = False
+        self.round_concluded = False
 
     def __eq__(self, other):
         return (
@@ -258,6 +258,7 @@ class Game:
                 # Dont forget ally winnings
                 if player.ally is not None:
                     self.players[player.ally].points += max_win
+        self.round_concluded = True
         self.reset_round()
 
     def __repr__(self) -> str:
@@ -421,25 +422,21 @@ class Game:
         elif cmd[0] == "bet":
             color = cmd[1]
             self.bet(curr_player, color)
-            self.turn_taken = True
 
         # ally <player_id>
         elif cmd[0] == "ally":
             player_id = cmd[1]
             self.players[curr_player].ally = player_id
             self.players[player_id].ally = curr_player
-            self.turn_taken = True
 
         # boost <location> <+/->
         elif cmd[0] == "boost":
             location = cmd[1]
             value = cmd[2]
             self.add_booster(curr_player, location, value)
-            self.turn_taken = True
 
         # roll <color> <amount>
         elif cmd[0] == "roll":
-            self.turn_taken = True
             color = cmd[1]
             amount = cmd[2]
             # Update board
@@ -465,12 +462,10 @@ class Game:
         # winner
         elif cmd == "winner":
             self.winner_bets.append(curr_player)
-            self.turn_taken = True
             print(f"Player {curr_player} bet on overall winner")
         # loser
         elif cmd == "loser":
             self.loser_bets.append(curr_player)
-            self.turn_taken = True
             print(f"Player {curr_player} bet on overall loser")
         else:
             print(f"Invalid move: {move}. Please try again.")

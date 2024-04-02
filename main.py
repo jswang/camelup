@@ -7,24 +7,25 @@ import json
 def main():
     parser = argparse.ArgumentParser(description="Camel Up Game")
 
-    parser.add_argument("--id", type=int, help="Player id", default=0)
+    parser.add_argument(
+        "--id",
+        type=int,
+        help="Your player id relative to Player 0 (first one to go)",
+        default=0,
+    )
     parser.add_argument("--n-players", type=int, help="Number of players", default=2)
     parser.add_argument(
         "--save-file", type=str, help="Old game setup to use", default=None
     )
+    parser.add_argument(
+        "--setup",
+        type=str,
+        help="File to load setup from",
+        default="default_setup.json",
+    )
     args = parser.parse_args()
 
     print("Camel Up!!!\n")
-    # TODO make inputting setup easier
-    setup = {
-        RED: 0,
-        PURPLE: 0,
-        YELLOW: 0,
-        BLUE: 1,
-        GREEN: 2,
-        WHITE: 14,
-        BLACK: 15,
-    }
 
     # If specified, load game from save file
     if args.save_file:
@@ -34,14 +35,20 @@ def main():
             g = Game.from_json(data)
     else:
         save_file = "current_game.json"
-        g = Game(args.n_players, setup)
+        with open(args.setup, "r") as f:
+            data = json.load(f)
+        print(f"data: {data}")
+        g = Game(args.n_players, data)
     round_starting_player = 0
+    curr_player = round_starting_player
     while not g.game_over:
         # Move the starter round by round
-        if not g.turn_taken:
-            curr_player = round_starting_player
+        if g.round_concluded:
             round_starting_player = (round_starting_player + 1) % args.n_players
+            curr_player = round_starting_player
+            g.round_concluded = False
             print(f"New round, starting player: {curr_player}")
+
         s = "your" if curr_player == args.id else f"Player {curr_player}"
         # Advance to next player if this player made a move
         if g.parse_move(curr_player, move=input(f"Enter {s} move: ")):

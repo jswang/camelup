@@ -118,7 +118,11 @@ class Board:
     def parse_setup(self, setup):
         """Parse setup dictionary and set up board accordingly"""
         for thing, tile in setup.items():
-            thing = int(thing)
+            try:
+                thing = int(thing)
+            except ValueError:
+                thing = str_to_color(thing)
+
             if thing in CAMELS:
                 self.tiles[tile].append(thing)
             if thing == BOOST_POS:

@@ -220,7 +220,7 @@ class Game:
         options = [
             f"Bet {color_to_str(bet_color)}",
             f"Ally Player {self.players[ally_index].id}",
-            f"Boost location {booster_location}, {color_to_str(boost_type)}",
+            f"Boost location {booster_location} {color_to_str(boost_type)}",
             "Roll dice",
         ]
         indices = np.flip(np.argsort(vals))

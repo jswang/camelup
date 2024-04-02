@@ -15,7 +15,7 @@ def has_toppers(tiles, color):
     tile, stack = get_location(tiles, color)
     has_topper = False
     if tile is not None:
-        has_topper = len(tiles[tile][stack:]) > 0
+        has_topper = len(tiles[tile][stack:]) > 1
     return has_topper
 
 
@@ -174,15 +174,17 @@ def simulate_round(tiles: dict, round: list):
 
             # New space without booster
             new_tile = my_tile + spaces
-            on_top = True
             # If you haven't finished game, check boosters
             if new_tile < N_TILES:
                 new_tile %= N_TILES
                 if BOOST_NEG in tiles[new_tile]:
                     on_top = False
-                    new_tile -= 1  # Intentionally no %, might win
+                    boost = 1 if color in [BLACK, WHITE] else -1
+                    new_tile += boost  # Intentionally no %, might win
                 elif BOOST_POS in tiles[new_tile]:
-                    new_tile += 1  # Intentionally no %, might win
+                    on_top = True
+                    boost = -1 if color in [BLACK, WHITE] else 1
+                    new_tile += boost  # Intentionally no %, might win
 
             # At this point, new_tile might be > N_TILES and it might be negative (which is ok)
             # Did you win?
@@ -190,6 +192,7 @@ def simulate_round(tiles: dict, round: list):
                 game_over = True
                 for i in range(N_TILES, new_tile + 1):
                     tiles[i] = []
+
             # Move to new tile
             stack_to_move = tiles[my_tile][my_stack_index:].copy()
             del tiles[my_tile][my_stack_index:]
@@ -199,6 +202,7 @@ def simulate_round(tiles: dict, round: list):
                 tiles[new_tile] = stack_to_move + tiles[new_tile]
 
             # Keep track of landings before booster added
+            # If stack crosses finish line, ignore - you dont get wraparound points
             if my_tile + spaces < N_TILES:
                 landings[my_tile + spaces] += len(stack_to_move)
 

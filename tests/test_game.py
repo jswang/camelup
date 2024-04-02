@@ -301,3 +301,23 @@ def test_best_booster_bet():
     assert booster_location == 3
     assert booster_val == pytest.approx(4.0341975)
     assert boost_type == BOOST_NEG
+
+
+def test_points():
+    g = Game(
+        2, setup={RED: 0, YELLOW: 0, GREEN: 0, BLUE: 0, PURPLE: 0, WHITE: 15, BLACK: 15}
+    )
+    g.parse_move(0, "boost 3 -")
+    g.parse_move(1, "boost 1 -")
+    g.parse_move(0, "bet yellow")
+    g.parse_move(1, "bet yellow")
+    g.parse_move(1, "ally 0")
+    g.parse_move(0, "roll blue 1")  # +1 points player 0, +2 points player 1
+    g.parse_move(1, "roll red 1")  # +4 points player 1
+    g.parse_move(0, "roll yellow 1")  # +1 points player 0, +4 points player 1
+    g.parse_move(1, "roll purple 1")  # +3 points player 1
+    g.parse_move(0, "roll green 1")  # +1 points player0, +2 points player 1
+    # Player 0 has: 3 points + 5 from winning + 3 from ally + 3 from rolling
+    assert g.players[0].points == 3 + 5 + 3 + 3
+    # Player 1 has: 3 points + 3 from winning + 5 from ally + 13 from boost + 2 from rolling
+    assert g.players[1].points == 3 + 3 + 5 + 13 + 2

@@ -120,7 +120,6 @@ class Game:
         if self.players[player_id].boost is not None:
             self.board.remove_booster(self.players[player_id].boost)
         self.players[player_id].boost = location
-        self.players[player_id].boost_val = value
         self.board.add_booster(location, value)
 
     def bet(self, player_id: int, color: int):
@@ -223,7 +222,7 @@ class Game:
         options = [
             f"Bet {color_to_str(bet_color)}",
             f"Ally Player {self.players[ally_index].id}",
-            f"Boost location {booster_location} {color_to_str(boost_type)}, current boost value: {self.players[player_id].boost_val}",
+            f"Boost location {booster_location} {color_to_str(boost_type)}",
             "Roll dice",
         ]
         indices = np.flip(np.argsort(vals))

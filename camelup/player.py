@@ -10,11 +10,14 @@ class Player:
         self.bets = []
         # location of boost
         self.boost = None
+        # Value of boost
+        self.boost_val = None
 
     def reset_round(self):
         self.ally = None
         self.bets = []
         self.boost = None
+        self.boost_val = None
 
     def __repr__(self) -> str:
         return f"Player {self.id}: (points: {self.points}, ally: {self.ally}, boost: {self.boost}, bets: {self.bets})"

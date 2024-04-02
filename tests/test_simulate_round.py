@@ -117,11 +117,11 @@ def test_winning_with_boost():
     assert game_over
 
 
-def test_winning_backwards():
+def test_cross_backwards():
     """
-    Cross 0->15, then back over with +1
+    Cross 0->15, then back over with -1
     14  15  0
-        +1  X
+        -1  X
     """
     b = Board(
         setup={
@@ -132,7 +132,7 @@ def test_winning_backwards():
             BLUE: 7,
             GREEN: 7,
             WHITE: 7,
-            BOOST_POS: [15],
+            BOOST_NEG: [15],
         }
     )
     winners, tiles, landings, game_over = simulate_round(b.tiles, [(BLACK, 1)])

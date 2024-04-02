@@ -175,6 +175,7 @@ def simulate_round(tiles: dict, round: list):
             # New space without booster
             new_tile = my_tile + spaces
             # If you haven't finished game, check boosters
+            on_top = True
             if new_tile < N_TILES:
                 new_tile %= N_TILES
                 if BOOST_NEG in tiles[new_tile]:
@@ -182,7 +183,6 @@ def simulate_round(tiles: dict, round: list):
                     boost = 1 if color in [BLACK, WHITE] else -1
                     new_tile += boost  # Intentionally no %, might win
                 elif BOOST_POS in tiles[new_tile]:
-                    on_top = True
                     boost = -1 if color in [BLACK, WHITE] else 1
                     new_tile += boost  # Intentionally no %, might win
 

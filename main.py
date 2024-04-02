@@ -35,12 +35,14 @@ def main():
     else:
         save_file = "current_game.json"
         g = Game(args.n_players, setup)
-    curr_player = 0
+    round_starting_player = 0
     while not g.game_over:
-        if curr_player == args.id:
-            s = "your"
-        else:
-            s = f"Player {curr_player}"
+        # Move the starter round by round
+        if not g.turn_taken:
+            curr_player = round_starting_player
+            round_starting_player = (round_starting_player + 1) % args.n_players
+            print(f"New round, starting player: {curr_player}")
+        s = "your" if curr_player == args.id else f"Player {curr_player}"
         # Advance to next player if this player made a move
         if g.parse_move(curr_player, move=input(f"Enter {s} move: ")):
             # write to json
@@ -51,9 +53,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # TODO: fix setup input, store state locally to restore
-
-"""
-dont boost if current one is better
-update order after a round correctly
-"""

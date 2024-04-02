@@ -76,6 +76,8 @@ class Game:
         self.available_bets = {color: [2, 2, 3, 5] for color in WIN_CAMELS}
         # game over
         self.game_over = False
+        # A turn has been taken this round
+        self.turn_taken = False
 
     def __eq__(self, other):
         return (
@@ -118,6 +120,7 @@ class Game:
         if self.players[player_id].boost is not None:
             self.board.remove_booster(self.players[player_id].boost)
         self.players[player_id].boost = location
+        self.players[player_id].boost_val = value
         self.board.add_booster(location, value)
 
     def bet(self, player_id: int, color: int):
@@ -220,7 +223,7 @@ class Game:
         options = [
             f"Bet {color_to_str(bet_color)}",
             f"Ally Player {self.players[ally_index].id}",
-            f"Boost location {booster_location} {color_to_str(boost_type)}",
+            f"Boost location {booster_location} {color_to_str(boost_type)}, current boost value: {self.players[player_id].boost_val}",
             "Roll dice",
         ]
         indices = np.flip(np.argsort(vals))
@@ -231,6 +234,7 @@ class Game:
         """Reset a round"""
         self.dice = DICE.copy()
         self.available_bets = {color: [2, 2, 3, 5] for color in WIN_CAMELS}
+        self.turn_taken = False
         self.board.reset_round()
         for player in self.players:
             player.reset_round()
@@ -417,21 +421,25 @@ class Game:
         elif cmd[0] == "bet":
             color = cmd[1]
             self.bet(curr_player, color)
+            self.turn_taken = True
 
         # ally <player_id>
         elif cmd[0] == "ally":
             player_id = cmd[1]
             self.players[curr_player].ally = player_id
             self.players[player_id].ally = curr_player
+            self.turn_taken = True
 
         # boost <location> <+/->
         elif cmd[0] == "boost":
             location = cmd[1]
             value = cmd[2]
             self.add_booster(curr_player, location, value)
+            self.turn_taken = True
 
         # roll <color> <amount>
         elif cmd[0] == "roll":
+            self.turn_taken = True
             color = cmd[1]
             amount = cmd[2]
             # Update board
@@ -457,10 +465,12 @@ class Game:
         # winner
         elif cmd == "winner":
             self.winner_bets.append(curr_player)
+            self.turn_taken = True
             print(f"Player {curr_player} bet on overall winner")
         # loser
         elif cmd == "loser":
             self.loser_bets.append(curr_player)
+            self.turn_taken = True
             print(f"Player {curr_player} bet on overall loser")
         else:
             print(f"Invalid move: {move}. Please try again.")

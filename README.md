@@ -18,7 +18,7 @@ Your best option is to bet on the red camel.
 ## Usage instructions
 Tiles and player ids are index by 0. This differs from the board labels which are index by 1.
 
-1. Enter the game initial setup by editing main.py, then call main.py with your id and number of players. Here, there are two players and I am going second.
+1. Enter the game initial setup in `default_setup.json`, then call main.py with your id and number of players. Here, there are two players and I am going second.
 ```python
 python3 main.py --id=1 --n-players=2
 ```
@@ -74,7 +74,7 @@ For example, using the probabilities above, consider the situation:
 If you were to ally, the best ally is Player 1, which has an expected value of 1.6
 
 ### 3. Place the booster
-This one's a little more interesting. The value in placing a booster lies in the expected numer of times a camel lands on that booster during the round, and the change in expected value of your existing bets were you to place a booster. This applies to the global winner and loser.
+This one's a little more interesting. The value in placing a booster lies in the expected numer of times a camel lands on that booster during the round, and the change in expected value of your existing bets were you to place a booster. This applies to the global winner and loser. The value of moving your boost will be printed, it's up to the user to remember the value from the previous boost and whether they should move their tile.
 <br> Calculating the payout is easy - based on the average number of landings per tile, you can calculate the expected value of the payout.
 <br> Calculating the change in expected value of your existing bets is harder - you would need to recalculate the probability of winning for every possible booster placement. If there are n possible placements, and you can place +1 or -1, then the number of calculations you would have to run is: 2*n*320760!
 <br> In practice, the following heuristic is used:

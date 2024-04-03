@@ -60,3 +60,26 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+"""
+add an undo?
+
+make tile entry match the board
+
+seems like this should be - not +:
+3.87: Boost location 10 +
+3.31: Bet yellow
+1.00: Roll dice
+0.00: Ally Player 0
+Enter your move: print
+
+Board:
+{0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: ['purple', 'green', 'blue', 'red'], 10: [], 11: ['black'], 12: ['white'], 13: ['yellow'], 14: [], 15: []}
+
+Players: [Player 0: (points: 46, ally: None, boost: None, bets: []), Player 1: (points: 42, ally: None, boost: None, bets: [])]
+Dice left: red, yellow, blue, green, purple, grey,
+Available bets: red: 5, yellow: 5, blue: 5, green: 5, purple: 5,
+Winner bets: [0]
+Loser bets: []
+"""

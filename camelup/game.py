@@ -179,8 +179,8 @@ class Game:
         1. Figure out the value of going from no booster to the current booster value
         2. To avoid many board calculations, use maximal landings with current board state
         3. Calculate the expected payout of putting booster there as +1 and -1
-        4. Calculate the change in expected value of existing bets for placing booster there as +1 and -1
-        5. Return the best location and type of booster
+        4. Calculate the change in expected value of existing bets of putting booster there as +1 and -1
+        5. Return the best location and type of booster, as well as the previous booster value
         """
         new_board = copy.deepcopy(self.board)
         # 1. Maximal landings without your current booster, since you're considering moving it

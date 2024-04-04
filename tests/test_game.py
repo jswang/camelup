@@ -332,6 +332,29 @@ def test_best_booster_bet_2():
     assert current_val == pytest.approx(1.34701646)
 
 
+def test_best_booster_bet_3():
+    g = Game(
+        2,
+        setup={
+            YELLOW: 10,
+            GREEN: 12,
+            RED: 12,
+            BLUE: 12,
+            BLACK: 14,
+            PURPLE: 15,
+            WHITE: 15,
+        },
+    )
+    g.dice = [RED, YELLOW, BLUE, GREEN, PURPLE]
+    _first, _second, landings = win_probabilities(tuple(g.dice), g.board.to_tuple())
+    booster_val, booster_location, boost_type, current_val = g.best_booster_bet(
+        0, landings
+    )
+    assert booster_val == pytest.approx(1.0403292181)
+    assert booster_location == 12
+    assert boost_type == BOOST_NEG
+
+
 def test_points():
     g = Game(
         2, setup={RED: 1, YELLOW: 1, GREEN: 1, BLUE: 1, PURPLE: 1, WHITE: 16, BLACK: 16}

@@ -1,6 +1,6 @@
 import numpy as np
 from camelup.constants import *
-from camelup.game import Game, get_rounds, bet_value
+from camelup.game import Game, get_rounds, bet_value, win_probabilities
 from camelup.board import get_winners
 import pytest
 
@@ -299,8 +299,23 @@ def test_best_booster_bet():
         ),
     )
     assert booster_location == 3
-    assert booster_val == pytest.approx(4.0341975)
+    assert booster_val == pytest.approx(2.1141975)
     assert boost_type == BOOST_NEG
+
+
+def test_best_booster_bet_2():
+    g = Game(
+        2,
+        setup={PURPLE: 9, GREEN: 9, BLUE: 9, RED: 9, BLACK: 11, WHITE: 12, YELLOW: 13},
+    )
+    g.dice = [RED, YELLOW, BLUE, GREEN, PURPLE]
+    first, second, landings = win_probabilities(tuple(g.dice), g.board.to_tuple())
+    booster_val, booster_location, boost_type = g.best_booster_bet(
+        0, first, second, landings
+    )
+    assert booster_location == 10
+    assert boost_type == BOOST_NEG
+    assert booster_val == pytest.approx(1.34701646)
 
 
 def test_points():

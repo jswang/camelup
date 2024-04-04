@@ -78,9 +78,10 @@ This one's a little more interesting. The value in placing a booster lies in the
 <br> Calculating the payout is easy - based on the average number of landings per tile, you can calculate the expected value of the payout.
 <br> Calculating the change in expected value of your existing bets is harder - you would need to recalculate the probability of winning for every possible booster placement. If there are n possible placements, and you can place +1 or -1, then the number of calculations you would have to run is: 2*n*320760!
 <br> In practice, the following heuristic is used:
-1. Choose the tile placement that maximizes the expected payout, call this value x.
-2. Calculate the change in value of your existing bets if you were to place the tile that location. Take the sum of these changes in value, call this y.
-3. Return x + y
+1. Choose the tile with the most landings in the current state of the board.
+2. Calculate the expected number of points if you were to place a +1 or a -1 boost on that tile location, call this value x.
+3. Calculate the change in value of your existing bets if you were to place a +1 or a -1 boost on that tile location. Take the sum of these changes in value, call this y.
+4. Return the maximum x + y for +1 or -1 boost on that tile location.
 
 ### 4. Roll dice
 This always has an expected value of 1.

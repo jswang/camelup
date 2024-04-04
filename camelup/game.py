@@ -158,25 +158,26 @@ class Game:
 
     def best_booster_bet(self, me_id: int, first: list, second: list, landings: list):
         """
-        Of the available booster locations, find the one that maximizes payout: x
-        Then, calculate the max change in the value of your existing bets: y
-        Return x + y, location
-        Note: only bets to +1
+        Best place to put a booster
+        1. To avoid many board calculations, use maximal landings to pick the initial booster location
+        2. Calculate the expected payout of putting booster there as +1 and -1
+        3. Calculate the change in expected value of existing bets for placing booster there as +1 and -1
+        4. Return the best location and type of booster
         """
-        # available locations
-        booster_locations = self.board.available_booster_locations()
+        new_board = copy.deepcopy(self.board)
+        # 1. Maximal landings as is.
+        booster_locations = new_board.available_booster_locations()
         booster_vals = landings[booster_locations]
-        # Just pick the best one for now
         index_best = np.argmax(booster_vals)
         loc = booster_locations[index_best]
-        landing_val = booster_vals[index_best]
+        if self.players[me_id].boost is not None:
+            new_board.remove_booster(self.players[me_id].boost)
 
-        # What change in bets would i receive?
-        new_board = copy.deepcopy(self.board)
+        # 2. +1 or -1
         ev = []
         possible_plays = [BOOST_POS, BOOST_NEG]
         for val in possible_plays:
-            # Adding a booster to board, not to overall game
+            new_board.remove_booster(loc)
             new_board.add_booster(loc, val)
             new_first, new_second, new_landings = win_probabilities(
                 tuple(self.dice), new_board.to_tuple()
@@ -189,7 +190,7 @@ class Game:
             ]
             # Account for increase in number of landings as well
             ev.append(np.sum(change_ev) + new_landings[loc])
-        return landing_val + max(ev), loc, possible_plays[np.argmax(ev)]
+        return max(ev), loc, possible_plays[np.argmax(ev)]
 
     def optimal_move(self, player_id: int):
         """

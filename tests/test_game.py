@@ -12,10 +12,10 @@ def game():
 
 def test_equality_game():
     g = Game(
-        4, setup={YELLOW: 0, PURPLE: 0, GREEN: 0, RED: 1, BLUE: 2, BLACK: 13, WHITE: 13}
+        4, setup={YELLOW: 1, PURPLE: 1, GREEN: 1, RED: 2, BLUE: 3, BLACK: 14, WHITE: 14}
     )
     g2 = Game(
-        4, setup={YELLOW: 0, PURPLE: 0, GREEN: 0, RED: 1, BLUE: 2, BLACK: 13, WHITE: 13}
+        4, setup={YELLOW: 1, PURPLE: 1, GREEN: 1, RED: 2, BLUE: 3, BLACK: 14, WHITE: 14}
     )
     assert g == g2
 
@@ -32,6 +32,7 @@ def test_check_user_input_easy(game):
     assert game.check_user_input(0, "loser 2") == "loser"
     assert game.check_user_input(0, "print") == "print"
     assert game.check_user_input(0, "print 2") == "print"
+    assert game.check_user_input(0, "help") is None
 
 
 def test_check_user_input_betting(game):
@@ -57,14 +58,14 @@ def test_check_user_input_ally(game):
 
 def test_check_user_input_boost(game):
     # Boosting
-    assert game.check_user_input(0, "boost 2 +") == ("boost", 2, BOOST_POS)
-    assert game.check_user_input(0, "boost 2 + blah") == ("boost", 2, BOOST_POS)
-    assert game.check_user_input(0, "boost 2 -") == ("boost", 2, BOOST_NEG)
+    assert game.check_user_input(0, "boost 3 +") == ("boost", 2, BOOST_POS)
+    assert game.check_user_input(0, "boost 3 + blah") == ("boost", 2, BOOST_POS)
+    assert game.check_user_input(0, "boost 3 -") == ("boost", 2, BOOST_NEG)
     assert game.check_user_input(0, "boost x -") is None
-    assert game.check_user_input(0, "boost 2 1") is None
-    assert game.check_user_input(0, "boost 16 +") is None
-    assert game.check_user_input(0, "boost -1 +") is None
-    assert game.check_user_input(0, "boost 15 +") == ("boost", 15, BOOST_POS)
+    assert game.check_user_input(0, "boost 3 1") is None
+    assert game.check_user_input(0, "boost 17 +") is None
+    assert game.check_user_input(0, "boost 0 +") is None
+    assert game.check_user_input(0, "boost 16 +") == ("boost", 15, BOOST_POS)
 
 
 def test_roll(game):
@@ -86,7 +87,7 @@ def test_optimal_move():
     """Sanity check that this runs"""
     # Optimal move
     g = Game(
-        4, setup={RED: 0, YELLOW: 0, PURPLE: 1, BLUE: 2, GREEN: 2, WHITE: 13, BLACK: 14}
+        4, setup={RED: 1, YELLOW: 1, PURPLE: 2, BLUE: 3, GREEN: 3, WHITE: 14, BLACK: 15}
     )
     g.dice = [GREEN]
     g.optimal_move(g.players[0].id)
@@ -95,14 +96,14 @@ def test_optimal_move():
 def test_parse_move():
     # Parse move
     g = Game(
-        4, setup={RED: 0, YELLOW: 0, PURPLE: 1, BLUE: 2, GREEN: 2, WHITE: 13, BLACK: 14}
+        4, setup={RED: 1, YELLOW: 1, PURPLE: 2, BLUE: 3, GREEN: 3, WHITE: 14, BLACK: 15}
     )
     g.parse_move(0, "bet yellow 5")
     assert g.players[0].bets == [(YELLOW, 5)]
     assert g.available_bets[YELLOW] == [2, 2, 3]
     g.parse_move(0, "ally 1")
     assert g.players[0].ally == 1
-    g.parse_move(0, "boost 1 +")
+    g.parse_move(0, "boost 2 +")
     assert g.players[0].boost == 1
     assert g.board.booster_tiles() == [1]
     g.parse_move(0, "roll red 1")
@@ -139,14 +140,14 @@ def test_boost_points():
     g = Game(
         2,
         setup={
-            RED: 1,
-            BLUE: 2,
-            YELLOW: 2,
-            PURPLE: 3,
-            GREEN: 3,
-            BLACK: 13,
-            WHITE: 13,
-            BOOST_NEG: [4],
+            RED: 2,
+            BLUE: 3,
+            YELLOW: 3,
+            PURPLE: 4,
+            GREEN: 4,
+            BLACK: 14,
+            WHITE: 14,
+            BOOST_NEG: [5],
         },
     )
     g.players[1].boost = 4
@@ -158,14 +159,14 @@ def test_boost_back_under():
     g = Game(
         2,
         setup={
-            RED: 3,
-            BLUE: 3,
-            YELLOW: 3,
-            PURPLE: 3,
-            GREEN: 3,
-            BLACK: 13,
-            WHITE: 13,
-            BOOST_NEG: [4],
+            RED: 4,
+            BLUE: 4,
+            YELLOW: 4,
+            PURPLE: 4,
+            GREEN: 4,
+            BLACK: 14,
+            WHITE: 14,
+            BOOST_NEG: [5],
         },
     )
     g.players[1].boost = 4
@@ -179,14 +180,14 @@ def test_conclude_round():
     g = Game(
         2,
         setup={
-            RED: 2,
-            YELLOW: 2,
-            PURPLE: 2,
-            GREEN: 2,
-            BLUE: 5,
-            BLACK: 11,
-            WHITE: 11,
-            BOOST_NEG: [3],
+            RED: 3,
+            YELLOW: 3,
+            PURPLE: 3,
+            GREEN: 3,
+            BLUE: 6,
+            BLACK: 12,
+            WHITE: 12,
+            BOOST_NEG: [4],
         },
     )
     g.dice = [GREEN, PURPLE]
@@ -263,13 +264,13 @@ def test_best_booster_bet():
     g = Game(
         2,
         setup={
-            RED: 0,
-            PURPLE: 0,
-            YELLOW: 0,
-            BLUE: 1,
-            GREEN: 2,
-            WHITE: 14,
-            BLACK: 15,
+            RED: 1,
+            PURPLE: 1,
+            YELLOW: 1,
+            BLUE: 2,
+            GREEN: 3,
+            WHITE: 15,
+            BLACK: 16,
         },
     )
     g.dice = [RED, YELLOW, BLUE, GREEN, PURPLE]
@@ -306,7 +307,15 @@ def test_best_booster_bet():
 def test_best_booster_bet_2():
     g = Game(
         2,
-        setup={PURPLE: 9, GREEN: 9, BLUE: 9, RED: 9, BLACK: 11, WHITE: 12, YELLOW: 13},
+        setup={
+            PURPLE: 10,
+            GREEN: 10,
+            BLUE: 10,
+            RED: 10,
+            BLACK: 12,
+            WHITE: 13,
+            YELLOW: 14,
+        },
     )
     g.dice = [RED, YELLOW, BLUE, GREEN, PURPLE]
     first, second, landings = win_probabilities(tuple(g.dice), g.board.to_tuple())
@@ -320,10 +329,10 @@ def test_best_booster_bet_2():
 
 def test_points():
     g = Game(
-        2, setup={RED: 0, YELLOW: 0, GREEN: 0, BLUE: 0, PURPLE: 0, WHITE: 15, BLACK: 15}
+        2, setup={RED: 1, YELLOW: 1, GREEN: 1, BLUE: 1, PURPLE: 1, WHITE: 16, BLACK: 16}
     )
-    g.parse_move(0, "boost 3 -")
-    g.parse_move(1, "boost 1 -")
+    g.parse_move(0, "boost 4 -")
+    g.parse_move(1, "boost 2 -")
     g.parse_move(0, "bet yellow")
     g.parse_move(1, "bet yellow")
     g.parse_move(1, "ally 0")

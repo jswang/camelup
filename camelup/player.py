@@ -17,7 +17,8 @@ class Player:
         self.boost = None
 
     def __repr__(self) -> str:
-        return f"Player {self.id}: (points: {self.points}, ally: {self.ally}, boost: {self.boost}, bets: {self.bets})"
+        """Print player info, boost given in index by 1"""
+        return f"Player {self.id}: (points: {self.points}, ally: {self.ally}, boost: {self.boost + 1 if self.boost else None}, bets: {self.bets})"
 
     def __eq__(self, other) -> bool:
         return (

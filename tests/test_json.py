@@ -5,7 +5,7 @@ from camelup.constants import *
 
 def test_json():
     g = Game(
-        4, setup={YELLOW: 0, PURPLE: 0, GREEN: 0, RED: 1, BLUE: 2, BLACK: 13, WHITE: 13}
+        4, setup={YELLOW: 1, PURPLE: 1, GREEN: 1, RED: 2, BLUE: 3, BLACK: 14, WHITE: 14}
     )
     g.winner_bets = [0, 2]
     g.loser_bets = [1, 3]

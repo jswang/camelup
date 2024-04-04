@@ -37,7 +37,6 @@ def main():
         save_file = "current_game.json"
         with open(args.setup, "r") as f:
             data = json.load(f)
-        print(f"data: {data}")
         g = Game(args.n_players, data)
     round_starting_player = 0
     curr_player = round_starting_player

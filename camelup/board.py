@@ -40,10 +40,11 @@ class Board:
             self.parse_setup(setup)
 
     def __repr__(self) -> str:
-        tiles = self.tiles.copy()
-        for i, l in tiles.items():
-            tiles[i] = [color_to_str(x) for x in l]
-        return f"Board:\n{tiles}\n"
+        """Print board, use index by 1 tiles for user readibility"""
+        new_tiles = {}
+        for i, l in self.tiles.items():
+            new_tiles[i + 1] = [color_to_str(x) for x in l]
+        return f"Board:\n{new_tiles}\n"
 
     def __eq__(self, other) -> bool:
         return np.all(self.tiles == other.tiles)
@@ -93,9 +94,13 @@ class Board:
         self.tiles[location].append(booster)
 
     def to_dict(self) -> dict:
-        """Put self into a setup dictionary"""
+        """
+        Put self into a setup dictionary.
+        Save as 1-indexing for user readability.
+        """
         res = {}
         for tile, l in self.tiles.items():
+            tile += 1  # Account for 1-indexing by user
             for thing in l:
                 if thing in CAMELS:
                     res[thing] = tile
@@ -116,20 +121,27 @@ class Board:
         return res
 
     def parse_setup(self, setup):
-        """Parse setup dictionary and set up board accordingly"""
+        """
+        Parse setup dictionary and set up board accordingly.
+        Converts from user 1-indexing to game 0-indexing.
+        """
         for thing, tile in setup.items():
+            # Account for 1-indexing by user
             try:
                 thing = int(thing)
             except ValueError:
                 thing = str_to_color(thing)
 
             if thing in CAMELS:
+                tile -= 1
                 self.tiles[tile].append(thing)
             if thing == BOOST_POS:
                 for t in tile:
+                    t -= 1
                     self.tiles[t].append(BOOST_POS)
             if thing == BOOST_NEG:
                 for t in tile:
+                    t -= 1
                     self.tiles[t].append(BOOST_NEG)
 
     def available_booster_locations(self) -> list:

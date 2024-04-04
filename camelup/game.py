@@ -220,10 +220,11 @@ class Game:
             player_id, first_place, second_place, landings
         )
         vals = [bet_val, ally_val, booster_val, 1]
+        # Converts to 1-indexing for user readability
         options = [
             f"Bet {color_to_str(bet_color)}",
             f"Ally Player {self.players[ally_index].id}",
-            f"Boost location {booster_location} {color_to_str(boost_type)}",
+            f"Boost location {booster_location + 1} {color_to_str(boost_type)}",
             "Roll dice",
         ]
         indices = np.flip(np.argsort(vals))
@@ -282,13 +283,20 @@ class Game:
         return res
 
     def check_user_input(self, curr_player: int, move: str) -> tuple:
-        """Check user input for formatting and validty. Return tuple of move or None if invalid"""
+        """Check user input for formatting and validity. Return tuple of move or None if invalid"""
         if len(move) == 0:
             return None
         move = move.lower().strip().split(" ")
 
+        # help
+        if move[0] == "help":
+            print(
+                f"Enter one of the following: optimal, bet <color>, ally <player_id>, boost <location> <+/->, roll <color> <amount>, winner, loser, print"
+            )
+            return None
+
         # optimal
-        if move[0] == "optimal":
+        elif move[0] == "optimal":
             return "optimal"
 
         # bet <color>
@@ -336,21 +344,21 @@ class Game:
 
         # boost <location> <+/->
         elif move[0] == "boost":
+            # Converts from user index by 1 to game index by 0
             try:
-                location = int(move[1])
+                viewer_location = int(move[1])
+                location = viewer_location - 1
                 value = move[2]
             except:
-                print(
-                    f"Invalid location: {move[1]} and value: {move[2]}. Please try again."
-                )
+                print(f"Invalid move: {move}. Please try again.")
                 return None
             if location < 0 or location >= N_TILES or value not in ["+", "-"]:
                 print(
-                    f"Invalid location: {location} and value: {value}. Please try again."
+                    f"Invalid location: {viewer_location} and value: {value}. Please try again."
                 )
                 return None
             print(
-                f"Player {curr_player} placed booster at {location} with value {value}"
+                f"Player {curr_player} placed booster at {viewer_location} with value {value}"
             )
             value = BOOST_POS if value == "+" else BOOST_NEG
             return ("boost", location, value)

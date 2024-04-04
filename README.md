@@ -8,7 +8,7 @@ This respository is a solver for the hit game "Camel Up". It takes into account 
 When requested, you get a printout with the expected value of playing a particular move, ordered from best to worst options. For example, if you got:
 ```
 3.24: Bet red
-1.07: Boost location 3, 1
+1.07: Boost location 3 +
 1.00: Roll dice
 0.00: Ally Player 0
 ```
@@ -16,13 +16,13 @@ Your best option is to bet on the red camel.
 
 
 ## Usage instructions
-Tiles and player ids are index by 0. This differs from the board labels which are index by 1.
+All user interfaces are index by 1 to match the board. (Under the hood things are index by 0 because I'm not insane.)
 
 1. Enter the game initial setup in `default_setup.json`, then call main.py with your id and number of players. Here, there are two players and I am going second.
 ```python
 python3 main.py --id=1 --n-players=2
 ```
-You also have the option of loading an existing game state, which is automatically saved locally as `current_game.json`
+You also have the option of loading an existing game state using `--save-file`. The game automatically saves it's state after each move locally as `current_game.json`
 
 1. You will then be prompted to enter you or other player's moves, the board and game state will update accordingly. Every round, you have the option of entering:
 - `print`: Print the state of the game and board

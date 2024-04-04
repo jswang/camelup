@@ -5,7 +5,7 @@ from camelup.constants import *
 def test_moving_black_camel():
     """Black has stack, white rolled"""
     b = Board(
-        setup={BLACK: 13, RED: 13, WHITE: 12, BLUE: 11, GREEN: 2, YELLOW: 2, PURPLE: 2}
+        setup={BLACK: 14, RED: 14, WHITE: 13, BLUE: 12, GREEN: 3, YELLOW: 3, PURPLE: 3}
     )
     _, tiles, _, _ = simulate_round(b.tiles, [(WHITE, 2)])
     assert tiles[11] == [BLUE, BLACK, RED]
@@ -16,7 +16,7 @@ def test_moving_black_camel():
 def test_moving_white_camel():
     """White has stack, black moved"""
     b = Board(
-        setup={WHITE: 13, RED: 13, BLACK: 12, BLUE: 11, GREEN: 2, YELLOW: 2, PURPLE: 2}
+        setup={WHITE: 14, RED: 14, BLACK: 13, BLUE: 12, GREEN: 3, YELLOW: 3, PURPLE: 3}
     )
     _, tiles, _, _ = simulate_round(b.tiles, [(BLACK, 2)])
     assert tiles[11] == [BLUE, WHITE, RED]
@@ -27,7 +27,7 @@ def test_moving_white_camel():
 def test_moving_black_black():
     """Both have stack, black rolled, black moves"""
     b = Board(
-        setup={WHITE: 13, RED: 13, BLACK: 12, BLUE: 12, GREEN: 2, YELLOW: 2, PURPLE: 2}
+        setup={WHITE: 14, RED: 14, BLACK: 13, BLUE: 13, GREEN: 3, YELLOW: 3, PURPLE: 3}
     )
     _, tiles, _, _ = simulate_round(b.tiles, [(BLACK, 2)])
     assert tiles[10] == [BLACK, BLUE]
@@ -37,7 +37,7 @@ def test_moving_black_black():
 def test_moving_white_white():
     """Both have stack, white rolled, white moves"""
     b = Board(
-        setup={WHITE: 13, RED: 13, BLACK: 12, BLUE: 12, GREEN: 2, YELLOW: 2, PURPLE: 2}
+        setup={WHITE: 14, RED: 14, BLACK: 13, BLUE: 13, GREEN: 3, YELLOW: 3, PURPLE: 3}
     )
     _, tiles, _, _ = simulate_round(b.tiles, [(WHITE, 2)])
     assert tiles[11] == [WHITE, RED]
@@ -49,14 +49,14 @@ def test_hopping_under():
     # red+purple hopping under purple
     b = Board(
         setup={
-            YELLOW: 14,
-            RED: 14,
-            PURPLE: 14,
-            WHITE: 7,
-            BLUE: 7,
-            GREEN: 7,
-            BLACK: 7,
-            BOOST_NEG: [15],
+            YELLOW: 15,
+            RED: 15,
+            PURPLE: 15,
+            WHITE: 8,
+            BLUE: 8,
+            GREEN: 8,
+            BLACK: 8,
+            BOOST_NEG: [16],
         }
     )
     winners, tiles, landings, _ = simulate_round(b.tiles, [(RED, 1)])
@@ -75,14 +75,14 @@ def test_winning_boost_neg():
     """
     b = Board(
         setup={
-            RED: 14,
-            PURPLE: 7,
-            YELLOW: 7,
-            BLUE: 7,
-            GREEN: 7,
-            BLACK: 7,
-            WHITE: 7,
-            BOOST_NEG: [0],
+            RED: 15,
+            PURPLE: 8,
+            YELLOW: 8,
+            BLUE: 8,
+            GREEN: 8,
+            BLACK: 8,
+            WHITE: 8,
+            BOOST_NEG: [1],
         }
     )
     winners, tiles, landings, game_over = simulate_round(b.tiles, [(RED, 2)])
@@ -100,14 +100,14 @@ def test_winning_with_boost():
     """
     b = Board(
         setup={
-            RED: 14,
-            PURPLE: 7,
-            YELLOW: 7,
-            BLUE: 7,
-            GREEN: 7,
-            BLACK: 7,
-            WHITE: 7,
-            BOOST_POS: [15],
+            RED: 15,
+            PURPLE: 8,
+            YELLOW: 8,
+            BLUE: 8,
+            GREEN: 8,
+            BLACK: 8,
+            WHITE: 8,
+            BOOST_POS: [16],
         }
     )
     winners, tiles, landings, game_over = simulate_round(b.tiles, [(RED, 1)])
@@ -125,14 +125,14 @@ def test_cross_backwards():
     """
     b = Board(
         setup={
-            BLACK: 0,
-            RED: 0,
-            YELLOW: 0,
-            PURPLE: 7,
-            BLUE: 7,
-            GREEN: 7,
-            WHITE: 7,
-            BOOST_NEG: [15],
+            BLACK: 1,
+            RED: 1,
+            YELLOW: 1,
+            PURPLE: 8,
+            BLUE: 8,
+            GREEN: 8,
+            WHITE: 8,
+            BOOST_NEG: [16],
         }
     )
     winners, tiles, landings, game_over = simulate_round(b.tiles, [(BLACK, 1)])
@@ -148,14 +148,14 @@ def test_crazy_camel_negative():
     """If a crazy camel lands on a -1, it should go clockwise"""
     b = Board(
         setup={
-            BLUE: 5,
-            PURPLE: 10,
-            BLACK: 10,
-            RED: 10,
-            GREEN: 12,
-            WHITE: 12,
-            YELLOW: 12,
-            BOOST_NEG: [11],
+            BLUE: 6,
+            PURPLE: 11,
+            BLACK: 11,
+            RED: 11,
+            GREEN: 13,
+            WHITE: 13,
+            YELLOW: 13,
+            BOOST_NEG: [12],
         }
     )
     winners, tiles, landings, game_over = simulate_round(b.tiles, [(WHITE, 1)])

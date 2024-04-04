@@ -170,11 +170,14 @@ class Game:
         booster_vals = landings[booster_locations]
         index_best = np.argmax(booster_vals)
         loc = booster_locations[index_best]
+        current_val = 0
         if self.players[me_id].boost is not None:
+            current_val = landings[self.players[me_id].boost]
             new_board.remove_booster(self.players[me_id].boost)
 
         # 2. +1 or -1
         ev = []
+        ev_landings = []
         possible_plays = [BOOST_POS, BOOST_NEG]
         for val in possible_plays:
             new_board.remove_booster(loc)
@@ -190,7 +193,14 @@ class Game:
             ]
             # Account for increase in number of landings as well
             ev.append(np.sum(change_ev) + new_landings[loc])
-        return max(ev), loc, possible_plays[np.argmax(ev)]
+            ev_landings.append(new_landings[loc])
+        return (
+            max(ev),
+            loc,
+            possible_plays[np.argmax(ev)],
+            ev_landings[np.argmax(ev)],
+            current_val,
+        )
 
     def optimal_move(self, player_id: int):
         """
@@ -216,15 +226,15 @@ class Game:
         ally_val, ally_index = self.best_ally(player_id, first_place, second_place)
 
         # 3. Place tile
-        booster_val, booster_location, boost_type = self.best_booster_bet(
-            player_id, first_place, second_place, landings
+        booster_val, booster_location, boost_type, new_val, current_val = (
+            self.best_booster_bet(player_id, first_place, second_place, landings)
         )
         vals = [bet_val, ally_val, booster_val, 1]
         # Converts to 1-indexing for user readability
         options = [
             f"Bet {color_to_str(bet_color)}",
             f"Ally Player {self.players[ally_index].id}",
-            f"Boost location {booster_location + 1} {color_to_str(boost_type)}",
+            f"Boost location {booster_location + 1} {color_to_str(boost_type)} ({booster_val-new_val:.2f} + {new_val:.2f}, current_val: {current_val:.2f})",
             "Roll dice",
         ]
         indices = np.flip(np.argsort(vals))

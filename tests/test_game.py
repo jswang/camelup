@@ -274,7 +274,7 @@ def test_best_booster_bet():
         },
     )
     g.dice = [RED, YELLOW, BLUE, GREEN, PURPLE]
-    booster_val, booster_location, boost_type = g.best_booster_bet(
+    booster_val, booster_location, boost_type, _, _ = g.best_booster_bet(
         0,
         [0.07582305, 0.38148148, 0.1409465, 0.24403292, 0.15771605],
         [0.11563786, 0.22088477, 0.18292181, 0.21944444, 0.26111111],
@@ -319,7 +319,7 @@ def test_best_booster_bet_2():
     )
     g.dice = [RED, YELLOW, BLUE, GREEN, PURPLE]
     first, second, landings = win_probabilities(tuple(g.dice), g.board.to_tuple())
-    booster_val, booster_location, boost_type = g.best_booster_bet(
+    booster_val, booster_location, boost_type, _, _ = g.best_booster_bet(
         0, first, second, landings
     )
     assert booster_location == 10

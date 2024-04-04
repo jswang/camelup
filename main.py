@@ -59,11 +59,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-"""
-add an undo?
-
-make tile entry match the board
-
-"""

@@ -86,8 +86,10 @@ class Board:
         """Remove booster from location"""
         if BOOST_POS in self.tiles[location]:
             self.tiles[location].remove(BOOST_POS)
+            return BOOST_POS
         if BOOST_NEG in self.tiles[location]:
             self.tiles[location].remove(BOOST_NEG)
+            return BOOST_NEG
 
     def add_booster(self, location, booster):
         """Add booster to location"""

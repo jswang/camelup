@@ -274,10 +274,8 @@ def test_best_booster_bet():
         },
     )
     g.dice = [RED, YELLOW, BLUE, GREEN, PURPLE]
-    booster_val, booster_location, boost_type, _, _ = g.best_booster_bet(
+    booster_val, booster_location, boost_type, current_val = g.best_booster_bet(
         0,
-        [0.07582305, 0.38148148, 0.1409465, 0.24403292, 0.15771605],
-        [0.11563786, 0.22088477, 0.18292181, 0.21944444, 0.26111111],
         np.array(
             [
                 0.0,
@@ -302,6 +300,7 @@ def test_best_booster_bet():
     assert booster_location == 3
     assert booster_val == pytest.approx(2.1141975)
     assert boost_type == BOOST_NEG
+    assert current_val == 0
 
 
 def test_best_booster_bet_2():
@@ -318,13 +317,19 @@ def test_best_booster_bet_2():
         },
     )
     g.dice = [RED, YELLOW, BLUE, GREEN, PURPLE]
-    first, second, landings = win_probabilities(tuple(g.dice), g.board.to_tuple())
-    booster_val, booster_location, boost_type, _, _ = g.best_booster_bet(
-        0, first, second, landings
+    _first, _second, landings = win_probabilities(tuple(g.dice), g.board.to_tuple())
+    booster_val, booster_location, boost_type, current_val = g.best_booster_bet(
+        0, landings
     )
     assert booster_location == 10
     assert boost_type == BOOST_NEG
     assert booster_val == pytest.approx(1.34701646)
+    assert current_val == 0
+
+    # Check that you correctly get the current booster value
+    g.add_booster(0, 10, BOOST_NEG)
+    _, _, _, current_val = g.best_booster_bet(0, landings)
+    assert current_val == pytest.approx(1.34701646)
 
 
 def test_points():

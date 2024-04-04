@@ -156,49 +156,57 @@ class Game:
         i = np.argmax(vals)
         return vals[i], colors[i]
 
-    def best_booster_bet(self, me_id: int, first: list, second: list, landings: list):
+    def booster_value(self, me_id: int, loc: int, board: Board):
+        """If you were to remove the booster at loc, what value would it have?"""
+        first, second, landings = win_probabilities(tuple(self.dice), board.to_tuple())
+        booster_type = board.remove_booster(loc)
+        removed_first, removed_second, _ = win_probabilities(
+            tuple(self.dice), board.to_tuple()
+        )
+        first_delta = removed_first - first
+        second_delta = removed_second - second
+        change_ev = [
+            bet_value(amount, first_delta[color], second_delta[color])
+            for color, amount in self.players[me_id].bets
+        ]
+        # Add it back
+        board.add_booster(loc, booster_type)
+        return np.sum(change_ev) + landings[loc]
+
+    def best_booster_bet(self, me_id: int, landings: list):
         """
         Best place to put a booster
-        1. To avoid many board calculations, use maximal landings to pick the initial booster location
-        2. Calculate the expected payout of putting booster there as +1 and -1
-        3. Calculate the change in expected value of existing bets for placing booster there as +1 and -1
-        4. Return the best location and type of booster
+        1. Figure out the value of going from no booster to the current booster value
+        2. To avoid many board calculations, use maximal landings with current board state
+        3. Calculate the expected payout of putting booster there as +1 and -1
+        4. Calculate the change in expected value of existing bets for placing booster there as +1 and -1
+        5. Return the best location and type of booster
         """
         new_board = copy.deepcopy(self.board)
-        # 1. Maximal landings as is.
+        # 1. Maximal landings without your current booster, since you're considering moving it
+        current_val = 0
+        if self.players[me_id].boost is not None:
+            # What value does the current booster add?
+            current_val = self.booster_value(
+                me_id, self.players[me_id].boost, new_board
+            )
+            new_board.remove_booster(self.players[me_id].boost)
+
+        # 2. Maximal landings with current booster state
         booster_locations = new_board.available_booster_locations()
         booster_vals = landings[booster_locations]
         index_best = np.argmax(booster_vals)
         loc = booster_locations[index_best]
-        current_val = 0
-        if self.players[me_id].boost is not None:
-            current_val = landings[self.players[me_id].boost]
-            new_board.remove_booster(self.players[me_id].boost)
-
-        # 2. +1 or -1
         ev = []
-        ev_landings = []
         possible_plays = [BOOST_POS, BOOST_NEG]
         for val in possible_plays:
-            new_board.remove_booster(loc)
             new_board.add_booster(loc, val)
-            new_first, new_second, new_landings = win_probabilities(
-                tuple(self.dice), new_board.to_tuple()
-            )
-            first_delta = new_first - first
-            second_delta = new_second - second
-            change_ev = [
-                bet_value(amount, first_delta[color], second_delta[color])
-                for color, amount in self.players[me_id].bets
-            ]
-            # Account for increase in number of landings as well
-            ev.append(np.sum(change_ev) + new_landings[loc])
-            ev_landings.append(new_landings[loc])
+            ev.append(self.booster_value(me_id, loc, new_board))
+            new_board.remove_booster(loc)
         return (
             max(ev),
             loc,
             possible_plays[np.argmax(ev)],
-            ev_landings[np.argmax(ev)],
             current_val,
         )
 
@@ -226,15 +234,15 @@ class Game:
         ally_val, ally_index = self.best_ally(player_id, first_place, second_place)
 
         # 3. Place tile
-        booster_val, booster_location, boost_type, new_val, current_val = (
-            self.best_booster_bet(player_id, first_place, second_place, landings)
+        booster_val, booster_location, boost_type, current_val = self.best_booster_bet(
+            player_id, landings
         )
         vals = [bet_val, ally_val, booster_val, 1]
         # Converts to 1-indexing for user readability
         options = [
             f"Bet {color_to_str(bet_color)}",
             f"Ally Player {self.players[ally_index].id}",
-            f"Boost location {booster_location + 1} {color_to_str(boost_type)} ({booster_val-new_val:.2f} + {new_val:.2f}, current_val: {current_val:.2f})",
+            f"Boost location {booster_location + 1} {color_to_str(boost_type)} (current_val: {current_val:.2f})",
             "Roll dice",
         ]
         indices = np.flip(np.argsort(vals))

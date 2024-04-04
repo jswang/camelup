@@ -1,11 +1,12 @@
 {
-    "red": 1,
-    "purple": 1,
-    "green": 1,
-    "yellow": 1,
-    "blue": 1,
+
+    "purple": 2,
+    "red": 2,
+    "blue": 2,
+    "yellow": 3,
+    "green": 3,
     "white": 16,
-    "black": 16,
+    "black": 14,
     "+": [],
     "-": []
 }
